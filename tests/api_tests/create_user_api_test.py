@@ -1,19 +1,30 @@
-import uuid
-
 import pytest, requests
 
 
 @pytest.mark.api
 class TestApiCreateUser:
 
-    @pytest.mark.debug
-    def test_admin_can_create_user_with_valid_credentials(self):
+    @pytest.mark.parametrize(
+        argnames="username, password, role",
+        argvalues=[
+            # Username: boundary length 3
+            ("Qz8", "Aa1!aaaa", "USER"),
+
+            # Username: boundary length 15
+            ("TestUser15lengt", "Aa1!aaaa", "ADMIN"),
+
+            # Username: equivalence class with allowed separators (._-)
+            ("pos_us-er.01", "GoodPass1@", "USER"),
+            ("jun-user.02", "GoodPass1#", "ADMIN"),
+        ]
+    )
+    def test_admin_can_create_user_with_valid_credentials(self, username, password, role):
         response = requests.post(
             url="http://localhost:4111/api/v1/admin/users",
             json={
-                "username": "TestUser1",
-                "password": "TestUser1!",
-                "role": "USER"
+                "username": username,
+                "password": password,
+                "role": role
             },
             headers={
                 "accept": "*/*",
@@ -23,8 +34,9 @@ class TestApiCreateUser:
         )
 
         assert response.status_code == 201
-        assert response.json().get("username") == "TestUser1"
-        assert response.json().get("role") == "USER"
+        assert response.json().get("username") == username
+        assert response.json().get("role") == role
+        
         password_hash = response.json().get("password")
         assert isinstance(password_hash, str) and len(password_hash.strip()) > 0
 
@@ -78,10 +90,10 @@ class TestApiCreateUser:
 
     def test_admin_cannot_create_user_that_already_exists(self):
         # create a user and check that the user was created
-        first_response = requests.post(
+        create_user_response = requests.post(
             url="http://localhost:4111/api/v1/admin/users",
             json={
-                "username": "TestUser111",
+                "username": "TestDupUsr02",
                 "password": "TestUser1!",
                 "role": "USER"
             },
@@ -91,12 +103,12 @@ class TestApiCreateUser:
                 "Content-Type": "application/json",
             }
         )
-        assert first_response.status_code == 201
+        assert create_user_response.status_code == 201
 
         second_response = requests.post(
             url="http://localhost:4111/api/v1/admin/users",
             json={
-                "username": "TestUser111",
+                "username": "TestDupUsr02",
                 "password": "TestUser1!",
                 "role": "USER"
             },
