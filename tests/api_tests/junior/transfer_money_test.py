@@ -1,0 +1,236 @@
+import pytest, requests
+
+
+@pytest.mark.api
+class TestApiTransferMoney:
+
+    @pytest.mark.parametrize(
+        argnames="username, transfer_amount, deposit_per_cycle, deposit_threshold, expected_receiver_balance",
+        argvalues=[
+            # Positive: user can transfer a small amount after building balance
+            ("TrfUser1", 1, 100, 500, 1.0),
+            # Positive: user can transfer max allowed amount
+            ("TrfUser2", 10000, 5000, 15000, 10000.0),
+            # Positive: user can transfer just below max
+            ("TrfUser3", 9999, 5000, 10000, 9999.0),
+        ],
+    )
+    def test_user_can_transfer_money(
+        self,
+        username,
+        transfer_amount,
+        deposit_per_cycle,
+        deposit_threshold,
+        expected_receiver_balance,
+    ):
+        # create a new user
+        create_user_response = requests.post(
+            url="http://localhost:4111/api/v1/admin/users",
+            json={"username": username, "password": "TestPass1!", "role": "USER"},
+            headers={
+                "accept": "*/*",
+                "Authorization": "Basic YWRtaW46YWRtaW4=",
+                "Content-Type": "application/json"
+            },
+        )
+        assert create_user_response.status_code == 201
+
+        # log in as that user; save Authorization header for next calls
+        login_user_response = requests.post(
+            url="http://localhost:4111/api/v1/auth/login",
+            json={"username": username, "password": "TestPass1!"},
+            headers={"accept": "*/*", "Content-Type": "application/json"},
+        )
+        assert login_user_response.status_code == 200
+        auth_header = login_user_response.headers.get("Authorization")
+
+        # open the first account (money will be sent from here)
+        sender_response = requests.post(
+            url="http://localhost:4111/api/v1/accounts",
+            headers={
+                "accept": "*/*",
+                "Content-Type": "application/json",
+                "Authorization": auth_header
+            },
+        )
+        assert sender_response.status_code == 201
+        sender_account_id = sender_response.json().get("id")
+
+        # open the second account (money will be received here)
+        receiver_response = requests.post(
+            url="http://localhost:4111/api/v1/accounts",
+            headers={
+                "accept": "*/*",
+                "Content-Type": "application/json",
+                "Authorization": auth_header
+            },
+        )
+        assert receiver_response.status_code == 201
+        receiver_account_id = receiver_response.json().get("id")
+
+        current_balance = 0.0
+        # Repeat deposits until sender balance reaches at least deposit_threshold
+        while current_balance < deposit_threshold:
+            # add deposit_per_cycle to sender; response balance updates current_balance
+            dep = requests.post(
+                url="http://localhost:4111/api/v1/accounts/deposit",
+                json={"id": sender_account_id, "balance": deposit_per_cycle},
+                headers={
+                    "accept": "*/*",
+                    "Content-Type": "application/json",
+                    "Authorization": auth_header
+                },
+            )
+            assert dep.status_code == 200
+            current_balance = dep.json().get("balance")
+
+        # move transfer_amount from sender to receiver
+        transfer_response = requests.post(
+            url="http://localhost:4111/api/v1/accounts/transfer",
+            json={
+                "senderAccountId": sender_account_id,
+                "receiverAccountId": receiver_account_id,
+                "amount": transfer_amount
+            },
+            headers={
+                "accept": "*/*",
+                "Content-Type": "application/json",
+                "Authorization": auth_header
+            },
+        )
+        assert transfer_response.status_code == 200
+
+        # list this user's accounts to assert balances
+        get_accounts_response = requests.get(
+            url="http://localhost:4111/api/v1/customer/accounts",
+            headers={"accept": "*/*", "Authorization": auth_header},
+        )
+        assert get_accounts_response.status_code == 200
+        accounts = get_accounts_response.json()
+        # Find sender row: balance should be (balance before transfer) minus transfer_amount
+        for account in accounts:
+            if account.get("id") == sender_account_id:
+                assert account.get("balance") == current_balance - transfer_amount
+                break
+        else:
+            raise AssertionError(f"Account {sender_account_id} not found in response")
+        # Find receiver row: balance should match expected_receiver_balance
+        for account in accounts:
+            if account.get("id") == receiver_account_id:
+                assert account.get("balance") == expected_receiver_balance
+                break
+        else:
+            raise AssertionError(f"Account {receiver_account_id} not found in response")
+
+    @pytest.mark.parametrize(
+        argnames="username, transfer_amount, deposit_per_cycle, deposit_threshold, expected_receiver_balance, error_substring",
+        argvalues=[
+            # Negative: cannot transfer if funds are insufficient
+            ("TrfNoUser1", 1000, 100, 200, 0.0, "Invalid transfer: insufficient funds or invalid accounts"),
+            # Negative: cannot transfer negative or zero (API validates min amount before transfer rules)
+            ("TrfNoUser2", -1, 1, 2, 0.0, "Transfer amount must be at least 0.01"),
+            ("TrfNoUser3", 0, 1, 2, 0.0, "Transfer amount must be at least 0.01"),
+            # Negative: cannot transfer more than 10000
+            ("TrfNoUser4", 10001, 5000, 11000, 0.0, "Transfer amount cannot exceed 10000"),
+        ],
+    )
+    def test_user_cannot_transfer_money(self,username,transfer_amount,deposit_per_cycle,deposit_threshold,expected_receiver_balance,error_substring):
+        # create user
+        create_user_response = requests.post(
+            url="http://localhost:4111/api/v1/admin/users",
+            json={"username": username, "password": "TestPass1!", "role": "USER"},
+            headers={
+                "accept": "*/*",
+                "Authorization": "Basic YWRtaW46YWRtaW4=",
+                "Content-Type": "application/json"
+            },
+        )
+        assert create_user_response.status_code == 201
+
+        # log in as that user; save Authorization header for next calls
+        login_user_response = requests.post(
+            url="http://localhost:4111/api/v1/auth/login",
+            json={"username": username, "password": "TestPass1!"},
+            headers={"accept": "*/*", "Content-Type": "application/json"}
+        )
+        assert login_user_response.status_code == 200
+        auth_header = login_user_response.headers.get("Authorization")
+
+        # create sender account
+        sender_response = requests.post(
+            url="http://localhost:4111/api/v1/accounts",
+            headers={
+                "accept": "*/*",
+                "Content-Type": "application/json",
+                "Authorization": auth_header
+            },
+        )
+        assert sender_response.status_code == 201
+        sender_account_id = sender_response.json().get("id")
+
+        # create receiver account
+        receiver_response = requests.post(
+            url="http://localhost:4111/api/v1/accounts",
+            headers={
+                "accept": "*/*",
+                "Content-Type": "application/json",
+                "Authorization": auth_header
+            },
+        )
+        assert receiver_response.status_code == 201
+        receiver_account_id = receiver_response.json().get("id")
+
+        current_balance = 0.0
+        # Build sender balance up to deposit_threshold (same as happy path)
+        while current_balance < deposit_threshold:
+            # top up sender; refresh current_balance from JSON
+            dep = requests.post(
+                url="http://localhost:4111/api/v1/accounts/deposit",
+                json={"id": sender_account_id, "balance": deposit_per_cycle},
+                headers={
+                    "accept": "*/*",
+                    "Content-Type": "application/json",
+                    "Authorization": auth_header
+                }
+            )
+            assert dep.status_code == 200
+            current_balance = dep.json().get("balance")
+
+        # must fail (400); body should contain error_substring
+        transfer_response = requests.post(
+            url="http://localhost:4111/api/v1/accounts/transfer",
+            json={
+                "senderAccountId": sender_account_id,
+                "receiverAccountId": receiver_account_id,
+                "amount": transfer_amount
+            },
+            headers={
+                "accept": "*/*",
+                "Content-Type": "application/json",
+                "Authorization": auth_header
+            }
+        )
+        assert transfer_response.status_code == 400
+        assert error_substring == transfer_response.text
+
+        # verify balances unchanged after failed transfer
+        get_accounts_response = requests.get(
+            url="http://localhost:4111/api/v1/customer/accounts",
+            headers={"accept": "*/*", "Authorization": auth_header},
+        )
+        assert get_accounts_response.status_code == 200
+        accounts = get_accounts_response.json()
+        # Sender: still at current_balance (no debit)
+        for account in accounts:
+            if account.get("id") == sender_account_id:
+                assert account.get("balance") == current_balance
+                break
+        else:
+            raise AssertionError(f"Account {sender_account_id} not found in response")
+        # Receiver: still at expected_receiver_balance (usually 0)
+        for account in accounts:
+            if account.get("id") == receiver_account_id:
+                assert account.get("balance") == expected_receiver_balance
+                break
+        else:
+            raise AssertionError(f"Account {receiver_account_id} not found in response")
