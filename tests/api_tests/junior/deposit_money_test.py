@@ -7,11 +7,11 @@ class TestApiDepositMoney:
         argnames="username, deposit_balance, expected_balance",
         argvalues=[
             # Positive: authorized user can deposit a small valid amount
-            ("DepositUser1", 1, 1),
+            ("DepositUser1", 0.01, 0.01),
             # Positive: authorized user can deposit below the 5000 limit
-            ("DepositUser2", 4999, 4999),
+            ("DepositUser2", 4999.99, 4999.99),
             # Positive: authorized user can deposit up to the 5000 limit
-            ("DepositUser3", 5000, 5000),
+            ("DepositUser3", 5000.00, 5000.00),
         ]
     )
     def test_user_can_deposit_valid_amount_of_money(self, username, deposit_balance, expected_balance):
@@ -86,7 +86,7 @@ class TestApiDepositMoney:
         accounts = get_accounts_response.json()
         for account in accounts:
             if account.get("id") == account_id:
-                assert account.get("balance") == deposit_balance
+                assert account.get("balance") == expected_balance
                 break
         # else выполнится если цикл не будет прерван break, то есть если account не будет найден
         else:
@@ -100,7 +100,7 @@ class TestApiDepositMoney:
             # Negative: authorized user cannot deposit if amount is 0
             ("CannotDepUser2", 0, "Deposit amount must be at least 0.01"),
             # Negative: authorized user cannot deposit if amount exceeds 5000
-            ("CannotDepUser3", 5001, "Deposit amount cannot exceed 5000"),
+            ("CannotDepUser3", 5000.01, "Deposit amount cannot exceed 5000"),
         ],
     )
     def test_user_cannot_deposit_money(self, username, invalid_deposit_amount, expected_error_message):

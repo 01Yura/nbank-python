@@ -36,6 +36,50 @@ class TestApiLoginUser:
         assert login_user_response.status_code == 200
         assert "Basic" in login_user_response.headers.get("Authorization")
 
+    @pytest.mark.parametrize(
+        argnames=("created_username", "created_password", "login_username", "login_password"),
+        argvalues=[
+            # Negative: correct password, incorrect username
+            ("LoginNegativeUser1", "TestPass1!", "LoginNegativeUser1_WRONG", "TestPass1!"),
+            # Negative: correct username, incorrect password
+            ("LoginNegativeUser2", "TestPass1!", "LoginNegativeUser2", "TestPass1!_WRONG"),
+        ],
+    )
+    def test_user_cannot_login_with_invalid_username_or_password(
+        self, created_username, created_password, login_username, login_password
+    ):
+        # create a user and check that the user was created
+        create_user_response = requests.post(
+            url="http://localhost:4111/api/v1/admin/users",
+            json={
+                "username": created_username,
+                "password": created_password,
+                "role": "USER",
+            },
+            headers={
+                "accept": "*/*",
+                "Authorization": "Basic YWRtaW46YWRtaW4=",
+                "Content-Type": "application/json",
+            },
+        )
+        assert create_user_response.status_code == 400
+
+        # attempt to login with invalid creds
+        login_user_response = requests.post(
+            url="http://localhost:4111/api/v1/auth/login",
+            json={
+                "username": login_username,
+                "password": login_password,
+            },
+            headers={
+                "accept": "*/*",
+                "Content-Type": "application/json",
+            },
+        )
+
+        assert login_user_response.status_code == 401
+        assert login_user_response.headers.get("Authorization") is None
+
     def test_admin_user_can_login_with_valid_credentials(self):
         login_admin_response = requests.post(
             url="http://localhost:4111/api/v1/auth/login",

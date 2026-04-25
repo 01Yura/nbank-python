@@ -12,7 +12,7 @@ class TestApiTransferMoney:
             # Positive: user can transfer max allowed amount
             ("TrfUser2", 10000, 5000, 15000, 10000.0),
             # Positive: user can transfer just below max
-            ("TrfUser3", 9999, 5000, 10000, 9999.0),
+            ("TrfUser3", 9999.99, 5000, 10000, 9999.99),
         ],
     )
     def test_user_can_transfer_money(
@@ -128,10 +128,10 @@ class TestApiTransferMoney:
             # Negative: cannot transfer if funds are insufficient
             ("TrfNoUser1", 1000, 100, 200, 0.0, "Invalid transfer: insufficient funds or invalid accounts"),
             # Negative: cannot transfer negative or zero (API validates min amount before transfer rules)
-            ("TrfNoUser2", -1, 1, 2, 0.0, "Transfer amount must be at least 0.01"),
+            ("TrfNoUser2", -0.01, 1, 2, 0.0, "Transfer amount must be at least 0.01"),
             ("TrfNoUser3", 0, 1, 2, 0.0, "Transfer amount must be at least 0.01"),
             # Negative: cannot transfer more than 10000
-            ("TrfNoUser4", 10001, 5000, 11000, 0.0, "Transfer amount cannot exceed 10000"),
+            ("TrfNoUser4", 10000.01, 5000, 11000, 0.0, "Transfer amount cannot exceed 10000"),
         ],
     )
     def test_user_cannot_transfer_money(self,username,transfer_amount,deposit_per_cycle,deposit_threshold,expected_receiver_balance,error_substring):
