@@ -1,4 +1,12 @@
+from decimal import Decimal, ROUND_HALF_UP
 import pytest, requests
+
+# Q - это константа, которая используется для округления чисел до 2 знаков после запятой
+Q = Decimal("0.01")
+def as_decimal(x) -> Decimal:
+    # x это number, причем с плавающей точкой, из response.json()
+    # мы преобразуем его в Decimal, округляем до 2 знаков после запятой и возвращаем
+    return Decimal(str(x)).quantize(Q, rounding=ROUND_HALF_UP)
 
 @pytest.mark.api
 class TestApiDepositMoney:
@@ -86,7 +94,7 @@ class TestApiDepositMoney:
         accounts = get_accounts_response.json()
         for account in accounts:
             if account.get("id") == account_id:
-                assert account.get("balance") == expected_balance
+                assert as_decimal(account.get("balance")) == as_decimal(expected_balance)
                 break
         # else выполнится если цикл не будет прерван break, то есть если account не будет найден
         else:
@@ -175,7 +183,7 @@ class TestApiDepositMoney:
         accounts = get_accounts_response.json()
         for account in accounts:
             if account.get("id") == account_id:
-                assert account.get("balance") == 0
+                assert as_decimal(account.get("balance")) == as_decimal(0)
                 break
         # else выполнится если цикл не будет прерван break, то есть если account не будет найден
         else:

@@ -1,4 +1,12 @@
+from decimal import Decimal, ROUND_HALF_UP
 import pytest, requests
+
+# Q - это константа, которая используется для округления чисел до 2 знаков после запятой
+Q = Decimal("0.01")
+def as_decimal(x) -> Decimal:
+    # x это number, причем с плавающей точкой, из response.json()
+    # мы преобразуем его в Decimal, округляем до 2 знаков после запятой и возвращаем
+    return Decimal(str(x)).quantize(Q, rounding=ROUND_HALF_UP)
 
 
 @pytest.mark.api
@@ -68,9 +76,10 @@ class TestApiTransferMoney:
         assert receiver_response.status_code == 201
         receiver_account_id = receiver_response.json().get("id")
 
-        current_balance = 0.0
+        current_balance = as_decimal(0)
+        deposit_threshold_money = as_decimal(deposit_threshold)
         # Repeat deposits until sender balance reaches at least deposit_threshold
-        while current_balance < deposit_threshold:
+        while current_balance < deposit_threshold_money:
             # add deposit_per_cycle to sender; response balance updates current_balance
             dep = requests.post(
                 url="http://localhost:4111/api/v1/accounts/deposit",
@@ -82,7 +91,7 @@ class TestApiTransferMoney:
                 },
             )
             assert dep.status_code == 200
-            current_balance = dep.json().get("balance")
+            current_balance = as_decimal(dep.json().get("balance"))
 
         # move transfer_amount from sender to receiver
         transfer_response = requests.post(
@@ -110,14 +119,14 @@ class TestApiTransferMoney:
         # Find sender row: balance should be (balance before transfer) minus transfer_amount
         for account in accounts:
             if account.get("id") == sender_account_id:
-                assert account.get("balance") == current_balance - transfer_amount
+                assert as_decimal(account.get("balance")) == (current_balance - as_decimal(transfer_amount))
                 break
         else:
             raise AssertionError(f"Account {sender_account_id} not found in response")
         # Find receiver row: balance should match expected_receiver_balance
         for account in accounts:
             if account.get("id") == receiver_account_id:
-                assert account.get("balance") == expected_receiver_balance
+                assert as_decimal(account.get("balance")) == as_decimal(expected_receiver_balance)
                 break
         else:
             raise AssertionError(f"Account {receiver_account_id} not found in response")
@@ -180,9 +189,10 @@ class TestApiTransferMoney:
         assert receiver_response.status_code == 201
         receiver_account_id = receiver_response.json().get("id")
 
-        current_balance = 0.0
+        current_balance = as_decimal(0)
+        deposit_threshold_money = as_decimal(deposit_threshold)
         # Build sender balance up to deposit_threshold (same as happy path)
-        while current_balance < deposit_threshold:
+        while current_balance < deposit_threshold_money:
             # top up sender; refresh current_balance from JSON
             dep = requests.post(
                 url="http://localhost:4111/api/v1/accounts/deposit",
@@ -194,7 +204,7 @@ class TestApiTransferMoney:
                 }
             )
             assert dep.status_code == 200
-            current_balance = dep.json().get("balance")
+            current_balance = as_decimal(dep.json().get("balance"))
 
         # must fail (400); body should contain error_substring
         transfer_response = requests.post(
@@ -223,14 +233,14 @@ class TestApiTransferMoney:
         # Sender: still at current_balance (no debit)
         for account in accounts:
             if account.get("id") == sender_account_id:
-                assert account.get("balance") == current_balance
+                assert as_decimal(account.get("balance")) == current_balance
                 break
         else:
             raise AssertionError(f"Account {sender_account_id} not found in response")
         # Receiver: still at expected_receiver_balance (usually 0)
         for account in accounts:
             if account.get("id") == receiver_account_id:
-                assert account.get("balance") == expected_receiver_balance
+                assert as_decimal(account.get("balance")) == as_decimal(expected_receiver_balance)
                 break
         else:
             raise AssertionError(f"Account {receiver_account_id} not found in response")
