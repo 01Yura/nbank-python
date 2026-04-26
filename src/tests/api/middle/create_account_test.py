@@ -5,22 +5,25 @@ from src.main.api.middle.DTO.account_dto import AccountDTO
 from src.main.api.middle.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.middle.DTO.login_user_request_dto import LoginUserRequestDTO
 
+
 @pytest.mark.api
 class TestApiCreateAccount:
 
     def test_user_can_create_account(self):
         # create a user and check that the user was created
+        create_user_request_dto = CreateUserRequestDTO(username="TestUser23", password="TestPass1!", role="USER")
         create_user_response = requests.post(
             url="http://localhost:4111/api/v1/admin/users",
-            json=CreateUserRequestDTO(username="TestUser23", password="TestPass1!", role="USER").model_dump(),
+            json=create_user_request_dto.model_dump(),
             headers={"accept": "*/*", "Authorization": "Basic YWRtaW46YWRtaW4=", "Content-Type": "application/json"},
         )
         assert create_user_response.status_code == 201
 
         # login as the user and save his auth header
+        login_user_request_dto = LoginUserRequestDTO(username="TestUser23", password="TestPass1!")
         login_user_response = requests.post(
             url="http://localhost:4111/api/v1/auth/login",
-            json=LoginUserRequestDTO(username="TestUser23", password="TestPass1!").model_dump(),
+            json=login_user_request_dto.model_dump(),
             headers={"accept": "*/*", "Content-Type": "application/json"},
         )
 

@@ -22,21 +22,23 @@ class TestApiCreateUser:
         ]
     )
     def test_admin_can_create_user_with_valid_credentials(self, username, password, role):
-        response = requests.post(
+        # create a user and check that the user was created
+        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role=role)
+        create_user_response = requests.post(
             url="http://localhost:4111/api/v1/admin/users",
-            json=CreateUserRequestDTO(username=username, password=password, role=role).model_dump(),
+            json=create_user_request_dto.model_dump(),
             headers={"accept": "*/*", "Authorization": "Basic YWRtaW46YWRtaW4=", "Content-Type": "application/json"},
         )
 
-        assert response.status_code == 201
+        assert create_user_response.status_code == 201
         # response.json() — парсит тело HTTP-ответа (JSON) в Python-словарь (dict).
         # CreateUserResponseDTO(**...) — берёт этот словарь и создаёт объект CreateUserResponseDTO, 
         # передавая ключи как именованные аргументы.
-        create_user_response = CreateUserResponseDTO(**response.json())
-        assert create_user_response.username == username
-        assert create_user_response.role == role
+        create_user_response_dto = CreateUserResponseDTO(**create_user_response.json())
+        assert create_user_response_dto.username == username
+        assert create_user_response_dto.role == role
 
-        password_hash = create_user_response.password
+        password_hash = create_user_response_dto.password
         assert isinstance(password_hash, str) and len(password_hash.strip()) > 0
 
     @pytest.mark.parametrize(
@@ -69,29 +71,32 @@ class TestApiCreateUser:
         ]
     )
     def test_admin_cannot_create_user_with_invalid_credentials(self, username, password, role, error_key, error_value):
-        response = requests.request(
+        # create a user and check that the user WAS NOT created
+        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role=role)
+        create_user_response = requests.request(
             method="POST",
             url="http://localhost:4111/api/v1/admin/users",
-            json=CreateUserRequestDTO(username=username, password=password, role=role).model_dump(),
+            json=create_user_request_dto.model_dump(),
             headers={"accept": "*/*", "Authorization": "Basic YWRtaW46YWRtaW4=", "Content-Type": "application/json"},
         )
 
-        assert response.status_code == 400
-        assert error_value in response.json().get(error_key)
+        assert create_user_response.status_code == 400
+        assert error_value in create_user_response.json().get(error_key)
 
     def test_admin_cannot_create_user_that_already_exists(self):
         # create a user and check that the user was created
+        create_user_request_dto = CreateUserRequestDTO(username="TestDupUsr02", password="TestUser1!", role="USER")
         create_user_response = requests.post(
             url="http://localhost:4111/api/v1/admin/users",
-            json=CreateUserRequestDTO(username="TestDupUsr02", password="TestUser1!", role="USER").model_dump(),
+            json=create_user_request_dto.model_dump(),
             headers={"accept": "*/*", "Authorization": "Basic YWRtaW46YWRtaW4=", "Content-Type": "application/json"},
         )
         assert create_user_response.status_code == 201
 
-        second_response = requests.post(
+        create_user_response_second = requests.post(
             url="http://localhost:4111/api/v1/admin/users",
-            json=CreateUserRequestDTO(username="TestDupUsr02", password="TestUser1!", role="USER").model_dump(),
+            json=create_user_request_dto.model_dump(),
             headers={"accept": "*/*", "Authorization": "Basic YWRtaW46YWRtaW4=", "Content-Type": "application/json"},
         )
-        assert second_response.status_code == 400
-        assert "already exists" in second_response.text
+        assert create_user_response_second.status_code == 400
+        assert "already exists" in create_user_response_second.text
