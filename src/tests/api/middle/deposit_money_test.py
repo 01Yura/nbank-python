@@ -8,6 +8,7 @@ from src.main.api.middle.DTO.deposit_money_request_dto import DepositMoneyReques
 
 # Q - это константа, которая используется для округления чисел до 2 знаков после запятой
 Q = Decimal("0.01")
+
 def as_decimal(x) -> Decimal:
     # x это number, причем с плавающей точкой, из response.json()
     # мы преобразуем его в Decimal, округляем до 2 знаков после запятой и возвращаем
@@ -28,18 +29,20 @@ class TestApiDepositMoney:
         ]
     )
     def test_user_can_deposit_valid_amount_of_money(self, username, deposit_balance, expected_balance):
-        # create a user
+        # create user
+        create_user_request_dto = CreateUserRequestDTO(username=username, password="TestPass1!", role="USER")
         create_user_response = requests.post(
             url="http://localhost:4111/api/v1/admin/users",
-            json=CreateUserRequestDTO(username=username, password="TestPass1!", role="USER").model_dump(),
+            json=create_user_request_dto.model_dump(),
             headers={"accept": "*/*", "Authorization": "Basic YWRtaW46YWRtaW4=", "Content-Type": "application/json"},
         )
         assert create_user_response.status_code == 201
 
-        # login as the user and save his auth header
+        # login and save auth header
+        login_user_request_dto = LoginUserRequestDTO(username=username, password="TestPass1!")
         login_user_response = requests.post(
             url="http://localhost:4111/api/v1/auth/login",
-            json=LoginUserRequestDTO(username=username, password="TestPass1!").model_dump(),
+            json=login_user_request_dto.model_dump(),
             headers={"accept": "*/*", "Content-Type": "application/json"},
         )
 
@@ -56,9 +59,10 @@ class TestApiDepositMoney:
         account_id = created_account.id
 
         # deposit money
+        deposit_money_request_dto = DepositMoneyRequestDTO(id=account_id, balance=deposit_balance)
         deposit_response = requests.post(
             url="http://localhost:4111/api/v1/accounts/deposit",
-            json=DepositMoneyRequestDTO(id=account_id, balance=deposit_balance).model_dump(),
+            json=deposit_money_request_dto.model_dump(),
             headers={"accept": "*/*", "Content-Type": "application/json", "Authorization": auth_header},
         )
         assert deposit_response.status_code == 200
@@ -91,18 +95,20 @@ class TestApiDepositMoney:
         ],
     )
     def test_user_cannot_deposit_money(self, username, invalid_deposit_amount, expected_error_message):
-        # create a user
+        # create user
+        create_user_request_dto = CreateUserRequestDTO(username=username, password="TestPass1!", role="USER")
         create_user_response = requests.post(
             url="http://localhost:4111/api/v1/admin/users",
-            json=CreateUserRequestDTO(username=username, password="TestPass1!", role="USER").model_dump(),
+            json=create_user_request_dto.model_dump(),
             headers={"accept": "*/*", "Authorization": "Basic YWRtaW46YWRtaW4=", "Content-Type": "application/json"},
         )
         assert create_user_response.status_code == 201
 
-        # login as the user and save his auth header
+        # login and save auth header
+        login_user_request_dto = LoginUserRequestDTO(username=username, password="TestPass1!")
         login_user_response = requests.post(
             url="http://localhost:4111/api/v1/auth/login",
-            json=LoginUserRequestDTO(username=username, password="TestPass1!").model_dump(),
+            json=login_user_request_dto.model_dump(),
             headers={"accept": "*/*", "Content-Type": "application/json"},
         )
         assert login_user_response.status_code == 200
@@ -118,9 +124,10 @@ class TestApiDepositMoney:
         account_id = created_account.id
 
         # deposit with invalid amount — should be rejected
+        deposit_money_request_dto = DepositMoneyRequestDTO(id=account_id, balance=invalid_deposit_amount)
         deposit_response = requests.post(
             url="http://localhost:4111/api/v1/accounts/deposit",
-            json=DepositMoneyRequestDTO(id=account_id, balance=invalid_deposit_amount).model_dump(),
+            json=deposit_money_request_dto.model_dump(),
             headers={"accept": "*/*", "Content-Type": "application/json", "Authorization": auth_header},
         )
         assert deposit_response.status_code == 400

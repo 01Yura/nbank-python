@@ -1,5 +1,3 @@
-from typing import Optional
-
 from src.main.api.middle.DTO.base_dto import BaseDTO
 from src.main.api.middle.DTO.account_dto import AccountDTO
 
@@ -9,6 +7,6 @@ class CreateUserResponseDTO(BaseDTO):
     username: str
     password: str
     role: str
-    name: Optional[str]
+    name: str | None
     accounts: list[AccountDTO]
 

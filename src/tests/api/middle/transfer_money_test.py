@@ -31,18 +31,20 @@ class TestApiTransferMoney:
         ],
     )
     def test_user_can_transfer_money(self, username, transfer_amount, deposit_per_cycle, deposit_threshold, expected_receiver_balance):
-        # create a new user
+        # create user
+        create_user_request_dto = CreateUserRequestDTO(username=username, password="TestPass1!", role="USER")
         create_user_response = requests.post(
             url="http://localhost:4111/api/v1/admin/users",
-            json=CreateUserRequestDTO(username=username, password="TestPass1!", role="USER").model_dump(),
+            json=create_user_request_dto.model_dump(),
             headers={"accept": "*/*", "Authorization": "Basic YWRtaW46YWRtaW4=", "Content-Type": "application/json"},
         )
         assert create_user_response.status_code == 201
 
-        # log in as that user; save Authorization header for next calls
+        # login and save auth header
+        login_user_request_dto = LoginUserRequestDTO(username=username, password="TestPass1!")
         login_user_response = requests.post(
             url="http://localhost:4111/api/v1/auth/login",
-            json=LoginUserRequestDTO(username=username, password="TestPass1!").model_dump(),
+            json=login_user_request_dto.model_dump(),
             headers={"accept": "*/*", "Content-Type": "application/json"},
         )
         assert login_user_response.status_code == 200
@@ -68,22 +70,28 @@ class TestApiTransferMoney:
 
         current_balance = as_decimal(0)
         deposit_threshold_money = as_decimal(deposit_threshold)
-        # Repeat deposits until sender balance reaches at least deposit_threshold
+        # build balance to reach deposit_threshold
         while current_balance < deposit_threshold_money:
-            # add deposit_per_cycle to sender; response balance updates current_balance
+            # top up sender
+            deposit_money_request_dto = DepositMoneyRequestDTO(id=sender_account_id, balance=deposit_per_cycle)
             dep = requests.post(
                 url="http://localhost:4111/api/v1/accounts/deposit",
-                json=DepositMoneyRequestDTO(id=sender_account_id, balance=deposit_per_cycle).model_dump(),
+                json=deposit_money_request_dto.model_dump(),
                 headers={"accept": "*/*", "Content-Type": "application/json", "Authorization": auth_header},
             )
             assert dep.status_code == 200
             deposit_result = DepositMoneyResponseDTO(**dep.json())
             current_balance = as_decimal(deposit_result.balance)
 
-        # move transfer_amount from sender to receiver
+        # transfer from sender to receiver
+        transfer_money_request_dto = TransferMoneyRequestDTO(
+            senderAccountId=sender_account_id,
+            receiverAccountId=receiver_account_id,
+            amount=transfer_amount,
+        )
         transfer_response = requests.post(
             url="http://localhost:4111/api/v1/accounts/transfer",
-            json=TransferMoneyRequestDTO(senderAccountId=sender_account_id, receiverAccountId=receiver_account_id, amount=transfer_amount).model_dump(),
+            json=transfer_money_request_dto.model_dump(),
             headers={"accept": "*/*", "Content-Type": "application/json", "Authorization": auth_header},
         )
         assert transfer_response.status_code == 200
@@ -126,17 +134,19 @@ class TestApiTransferMoney:
     )
     def test_user_cannot_transfer_money(self, username, transfer_amount, deposit_per_cycle, deposit_threshold, expected_receiver_balance, error_substring):
         # create user
+        create_user_request_dto = CreateUserRequestDTO(username=username, password="TestPass1!", role="USER")
         create_user_response = requests.post(
             url="http://localhost:4111/api/v1/admin/users",
-            json=CreateUserRequestDTO(username=username, password="TestPass1!", role="USER").model_dump(),
+            json=create_user_request_dto.model_dump(),
             headers={"accept": "*/*", "Authorization": "Basic YWRtaW46YWRtaW4=", "Content-Type": "application/json"},
         )
         assert create_user_response.status_code == 201
 
-        # log in as that user; save Authorization header for next calls
+        # login and save auth header
+        login_user_request_dto = LoginUserRequestDTO(username=username, password="TestPass1!")
         login_user_response = requests.post(
             url="http://localhost:4111/api/v1/auth/login",
-            json=LoginUserRequestDTO(username=username, password="TestPass1!").model_dump(),
+            json=login_user_request_dto.model_dump(),
             headers={"accept": "*/*", "Content-Type": "application/json"},
         )
         assert login_user_response.status_code == 200
@@ -162,22 +172,28 @@ class TestApiTransferMoney:
 
         current_balance = as_decimal(0)
         deposit_threshold_money = as_decimal(deposit_threshold)
-        # Build sender balance up to deposit_threshold (same as happy path)
+        # build sender balance to reach deposit_threshold
         while current_balance < deposit_threshold_money:
-            # top up sender; refresh current_balance from JSON
+            # top up sender
+            deposit_money_request_dto = DepositMoneyRequestDTO(id=sender_account_id, balance=deposit_per_cycle)
             dep = requests.post(
                 url="http://localhost:4111/api/v1/accounts/deposit",
-                json=DepositMoneyRequestDTO(id=sender_account_id, balance=deposit_per_cycle).model_dump(),
+                json=deposit_money_request_dto.model_dump(),
                 headers={"accept": "*/*", "Content-Type": "application/json", "Authorization": auth_header},
             )
             assert dep.status_code == 200
             deposit_result = DepositMoneyResponseDTO(**dep.json())
             current_balance = as_decimal(deposit_result.balance)
 
-        # must fail (400); body should contain error_substring
+        # transfer must fail
+        transfer_money_request_dto = TransferMoneyRequestDTO(
+            senderAccountId=sender_account_id,
+            receiverAccountId=receiver_account_id,
+            amount=transfer_amount,
+        )
         transfer_response = requests.post(
             url="http://localhost:4111/api/v1/accounts/transfer",
-            json=TransferMoneyRequestDTO(senderAccountId=sender_account_id, receiverAccountId=receiver_account_id, amount=transfer_amount).model_dump(),
+            json=transfer_money_request_dto.model_dump(),
             headers={"accept": "*/*", "Content-Type": "application/json", "Authorization": auth_header},
         )
         assert transfer_response.status_code == 400
