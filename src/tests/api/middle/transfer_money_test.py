@@ -1,19 +1,26 @@
 from decimal import Decimal, ROUND_HALF_UP
-import pytest, requests
+
+import pytest
 
 from src.main.api.middle.DTO.account_dto import AccountDTO
 from src.main.api.middle.DTO.create_user_request_dto import CreateUserRequestDTO
-from src.main.api.middle.DTO.login_user_request_dto import LoginUserRequestDTO
+from src.main.api.middle.DTO.create_user_response_dto import CreateUserResponseDTO
 from src.main.api.middle.DTO.deposit_money_request_dto import DepositMoneyRequestDTO
 from src.main.api.middle.DTO.deposit_money_response_dto import DepositMoneyResponseDTO
 from src.main.api.middle.DTO.transfer_money_request_dto import TransferMoneyRequestDTO
+from src.main.api.middle.client.accounts_client import AccountsClient
+from src.main.api.middle.client.admin_client import AdminClient
+from src.main.api.middle.client.customer_accounts_client import CustomerAccountsClient
+from src.main.api.middle.client.deposit_money_client import DepositMoneyClient
+from src.main.api.middle.client.transfer_money_client import TransferMoneyClient
+from src.main.api.middle.specs.request_spec import RequestSpec
+from src.main.api.middle.specs.response_spec import ResponseSpec
 
-# Q - это константа, которая используется для округления чисел до 2 знаков после запятой
-Q = Decimal("0.01")
+
 def as_decimal(x) -> Decimal:
     # x это number, причем с плавающей точкой, из response.json()
     # мы преобразуем его в Decimal, округляем до 2 знаков после запятой и возвращаем
-    return Decimal(str(x)).quantize(Q, rounding=ROUND_HALF_UP)
+    return Decimal(str(x)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 @pytest.mark.api
@@ -31,42 +38,29 @@ class TestApiTransferMoney:
         ],
     )
     def test_user_can_transfer_money(self, username, transfer_amount, deposit_per_cycle, deposit_threshold, expected_receiver_balance):
-        # create user
-        create_user_request_dto = CreateUserRequestDTO(username=username, password="TestPass1!", role="USER")
-        create_user_response = requests.post(
-            url="http://localhost:4111/api/v1/admin/users",
-            json=create_user_request_dto.model_dump(),
-            headers={"accept": "*/*", "Authorization": "Basic YWRtaW46YWRtaW4=", "Content-Type": "application/json"},
-        )
-        assert create_user_response.status_code == 201
+        password = "TestPass1!"
 
-        # login and save auth header
-        login_user_request_dto = LoginUserRequestDTO(username=username, password="TestPass1!")
-        login_user_response = requests.post(
-            url="http://localhost:4111/api/v1/auth/login",
-            json=login_user_request_dto.model_dump(),
-            headers={"accept": "*/*", "Content-Type": "application/json"},
-        )
-        assert login_user_response.status_code == 200
-        auth_header = login_user_response.headers.get("Authorization")
+        # create user
+        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
+        create_user_response = AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_201_spec(),
+        ).post(create_user_request_dto)
+        create_user_response_dto = CreateUserResponseDTO(**create_user_response.json())
 
         # open the first account (money will be sent from here)
-        sender_response = requests.post(
-            url="http://localhost:4111/api/v1/accounts",
-            headers={"accept": "*/*", "Content-Type": "application/json", "Authorization": auth_header},
-        )
-        assert sender_response.status_code == 201
-        sender_account = AccountDTO(**sender_response.json())
-        sender_account_id = sender_account.id
+        sender_response = AccountsClient(
+            RequestSpec.user_auth_spec(username=username, password=password),
+            ResponseSpec.response_returns_201_spec(),
+        ).post(None)
+        sender_account_id = AccountDTO(**sender_response.json()).id
 
         # open the second account (money will be received here)
-        receiver_response = requests.post(
-            url="http://localhost:4111/api/v1/accounts",
-            headers={"accept": "*/*", "Content-Type": "application/json", "Authorization": auth_header},
-        )
-        assert receiver_response.status_code == 201
-        receiver_account = AccountDTO(**receiver_response.json())
-        receiver_account_id = receiver_account.id
+        receiver_response = AccountsClient(
+            RequestSpec.user_auth_spec(username=username, password=password),
+            ResponseSpec.response_returns_201_spec(),
+        ).post(None)
+        receiver_account_id = AccountDTO(**receiver_response.json()).id
 
         current_balance = as_decimal(0)
         deposit_threshold_money = as_decimal(deposit_threshold)
@@ -74,12 +68,10 @@ class TestApiTransferMoney:
         while current_balance < deposit_threshold_money:
             # top up sender
             deposit_money_request_dto = DepositMoneyRequestDTO(id=sender_account_id, balance=deposit_per_cycle)
-            dep = requests.post(
-                url="http://localhost:4111/api/v1/accounts/deposit",
-                json=deposit_money_request_dto.model_dump(),
-                headers={"accept": "*/*", "Content-Type": "application/json", "Authorization": auth_header},
-            )
-            assert dep.status_code == 200
+            dep = DepositMoneyClient(
+                RequestSpec.user_auth_spec(username=username, password=password),
+                ResponseSpec.response_returns_200_spec(),
+            ).post(deposit_money_request_dto)
             deposit_result = DepositMoneyResponseDTO(**dep.json())
             current_balance = as_decimal(deposit_result.balance)
 
@@ -89,36 +81,37 @@ class TestApiTransferMoney:
             receiverAccountId=receiver_account_id,
             amount=transfer_amount,
         )
-        transfer_response = requests.post(
-            url="http://localhost:4111/api/v1/accounts/transfer",
-            json=transfer_money_request_dto.model_dump(),
-            headers={"accept": "*/*", "Content-Type": "application/json", "Authorization": auth_header},
-        )
-        assert transfer_response.status_code == 200
+        TransferMoneyClient(
+            RequestSpec.user_auth_spec(username=username, password=password),
+            ResponseSpec.response_returns_200_spec(),
+        ).post(transfer_money_request_dto)
 
         # list this user's accounts to assert balances
-        get_accounts_response = requests.get(
-            url="http://localhost:4111/api/v1/customer/accounts",
-            headers={"accept": "*/*", "Authorization": auth_header},
-        )
-        assert get_accounts_response.status_code == 200
-        accounts = get_accounts_response.json()
+        get_accounts_response = CustomerAccountsClient(
+            RequestSpec.user_auth_spec(username=username, password=password),
+            ResponseSpec.response_returns_200_spec(),
+        ).get()
+        accounts = [AccountDTO(**a) for a in get_accounts_response.json()]
         # Find sender row: balance should be (balance before transfer) minus transfer_amount
         for account in accounts:
-            account_dto = AccountDTO(**account)
-            if account_dto.id == sender_account_id:
-                assert as_decimal(account_dto.balance) == (current_balance - as_decimal(transfer_amount))
+            if account.id == sender_account_id:
+                assert as_decimal(account.balance) == (current_balance - as_decimal(transfer_amount))
                 break
         else:
             raise AssertionError(f"Account {sender_account_id} not found in response")
         # Find receiver row: balance should match expected_receiver_balance
         for account in accounts:
-            account_dto = AccountDTO(**account)
-            if account_dto.id == receiver_account_id:
-                assert as_decimal(account_dto.balance) == as_decimal(expected_receiver_balance)
+            if account.id == receiver_account_id:
+                assert as_decimal(account.balance) == as_decimal(expected_receiver_balance)
                 break
         else:
             raise AssertionError(f"Account {receiver_account_id} not found in response")
+
+        # cleanup created user
+        AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_200_deleted_spec(create_user_response_dto.id),
+        ).delete(create_user_response_dto.id)
 
     @pytest.mark.parametrize(
         argnames="username, transfer_amount, deposit_per_cycle, deposit_threshold, expected_receiver_balance, error_substring",
@@ -133,42 +126,29 @@ class TestApiTransferMoney:
         ],
     )
     def test_user_cannot_transfer_money(self, username, transfer_amount, deposit_per_cycle, deposit_threshold, expected_receiver_balance, error_substring):
-        # create user
-        create_user_request_dto = CreateUserRequestDTO(username=username, password="TestPass1!", role="USER")
-        create_user_response = requests.post(
-            url="http://localhost:4111/api/v1/admin/users",
-            json=create_user_request_dto.model_dump(),
-            headers={"accept": "*/*", "Authorization": "Basic YWRtaW46YWRtaW4=", "Content-Type": "application/json"},
-        )
-        assert create_user_response.status_code == 201
+        password = "TestPass1!"
 
-        # login and save auth header
-        login_user_request_dto = LoginUserRequestDTO(username=username, password="TestPass1!")
-        login_user_response = requests.post(
-            url="http://localhost:4111/api/v1/auth/login",
-            json=login_user_request_dto.model_dump(),
-            headers={"accept": "*/*", "Content-Type": "application/json"},
-        )
-        assert login_user_response.status_code == 200
-        auth_header = login_user_response.headers.get("Authorization")
+        # create user
+        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
+        create_user_response = AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_201_spec(),
+        ).post(create_user_request_dto)
+        create_user_response_dto = CreateUserResponseDTO(**create_user_response.json())
 
         # create sender account
-        sender_response = requests.post(
-            url="http://localhost:4111/api/v1/accounts",
-            headers={"accept": "*/*", "Content-Type": "application/json", "Authorization": auth_header},
-        )
-        assert sender_response.status_code == 201
-        sender_account = AccountDTO(**sender_response.json())
-        sender_account_id = sender_account.id
+        sender_response = AccountsClient(
+            RequestSpec.user_auth_spec(username=username, password=password),
+            ResponseSpec.response_returns_201_spec(),
+        ).post(None)
+        sender_account_id = AccountDTO(**sender_response.json()).id
 
         # create receiver account
-        receiver_response = requests.post(
-            url="http://localhost:4111/api/v1/accounts",
-            headers={"accept": "*/*", "Content-Type": "application/json", "Authorization": auth_header},
-        )
-        assert receiver_response.status_code == 201
-        receiver_account = AccountDTO(**receiver_response.json())
-        receiver_account_id = receiver_account.id
+        receiver_response = AccountsClient(
+            RequestSpec.user_auth_spec(username=username, password=password),
+            ResponseSpec.response_returns_201_spec(),
+        ).post(None)
+        receiver_account_id = AccountDTO(**receiver_response.json()).id
 
         current_balance = as_decimal(0)
         deposit_threshold_money = as_decimal(deposit_threshold)
@@ -176,12 +156,10 @@ class TestApiTransferMoney:
         while current_balance < deposit_threshold_money:
             # top up sender
             deposit_money_request_dto = DepositMoneyRequestDTO(id=sender_account_id, balance=deposit_per_cycle)
-            dep = requests.post(
-                url="http://localhost:4111/api/v1/accounts/deposit",
-                json=deposit_money_request_dto.model_dump(),
-                headers={"accept": "*/*", "Content-Type": "application/json", "Authorization": auth_header},
-            )
-            assert dep.status_code == 200
+            dep = DepositMoneyClient(
+                RequestSpec.user_auth_spec(username=username, password=password),
+                ResponseSpec.response_returns_200_spec(),
+            ).post(deposit_money_request_dto)
             deposit_result = DepositMoneyResponseDTO(**dep.json())
             current_balance = as_decimal(deposit_result.balance)
 
@@ -191,34 +169,34 @@ class TestApiTransferMoney:
             receiverAccountId=receiver_account_id,
             amount=transfer_amount,
         )
-        transfer_response = requests.post(
-            url="http://localhost:4111/api/v1/accounts/transfer",
-            json=transfer_money_request_dto.model_dump(),
-            headers={"accept": "*/*", "Content-Type": "application/json", "Authorization": auth_header},
-        )
-        assert transfer_response.status_code == 400
-        assert error_substring == transfer_response.text
+        TransferMoneyClient(
+            RequestSpec.user_auth_spec(username=username, password=password),
+            ResponseSpec.response_returns_400_spec_with_text(error_substring),
+        ).post(transfer_money_request_dto)
 
         # verify balances unchanged after failed transfer
-        get_accounts_response = requests.get(
-            url="http://localhost:4111/api/v1/customer/accounts",
-            headers={"accept": "*/*", "Authorization": auth_header},
-        )
-        assert get_accounts_response.status_code == 200
-        accounts = get_accounts_response.json()
+        get_accounts_response = CustomerAccountsClient(
+            RequestSpec.user_auth_spec(username=username, password=password),
+            ResponseSpec.response_returns_200_spec(),
+        ).get()
+        accounts = [AccountDTO(**a) for a in get_accounts_response.json()]
         # Sender: still at current_balance (no debit)
         for account in accounts:
-            account_dto = AccountDTO(**account)
-            if account_dto.id == sender_account_id:
-                assert as_decimal(account_dto.balance) == current_balance
+            if account.id == sender_account_id:
+                assert as_decimal(account.balance) == current_balance
                 break
         else:
             raise AssertionError(f"Account {sender_account_id} not found in response")
         # Receiver: still at expected_receiver_balance (usually 0)
         for account in accounts:
-            account_dto = AccountDTO(**account)
-            if account_dto.id == receiver_account_id:
-                assert as_decimal(account_dto.balance) == as_decimal(expected_receiver_balance)
+            if account.id == receiver_account_id:
+                assert as_decimal(account.balance) == as_decimal(expected_receiver_balance)
                 break
         else:
             raise AssertionError(f"Account {receiver_account_id} not found in response")
+
+        # cleanup created user
+        AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_200_deleted_spec(create_user_response_dto.id),
+        ).delete(create_user_response_dto.id)

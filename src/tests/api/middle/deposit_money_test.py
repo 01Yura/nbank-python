@@ -1,18 +1,24 @@
 from decimal import Decimal, ROUND_HALF_UP
-import pytest, requests
+
+import pytest
 
 from src.main.api.middle.DTO.account_dto import AccountDTO
 from src.main.api.middle.DTO.create_user_request_dto import CreateUserRequestDTO
-from src.main.api.middle.DTO.login_user_request_dto import LoginUserRequestDTO
+from src.main.api.middle.DTO.create_user_response_dto import CreateUserResponseDTO
 from src.main.api.middle.DTO.deposit_money_request_dto import DepositMoneyRequestDTO
+from src.main.api.middle.client.accounts_client import AccountsClient
+from src.main.api.middle.client.admin_client import AdminClient
+from src.main.api.middle.client.customer_accounts_client import CustomerAccountsClient
+from src.main.api.middle.client.deposit_money_client import DepositMoneyClient
+from src.main.api.middle.specs.request_spec import RequestSpec
+from src.main.api.middle.specs.response_spec import ResponseSpec
 
-# Q - это константа, которая используется для округления чисел до 2 знаков после запятой
-Q = Decimal("0.01")
 
 def as_decimal(x) -> Decimal:
     # x это number, причем с плавающей точкой, из response.json()
     # мы преобразуем его в Decimal, округляем до 2 знаков после запятой и возвращаем
-    return Decimal(str(x)).quantize(Q, rounding=ROUND_HALF_UP)
+    return Decimal(str(x)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
 
 @pytest.mark.api
 class TestApiDepositMoney:
@@ -29,59 +35,48 @@ class TestApiDepositMoney:
         ]
     )
     def test_user_can_deposit_valid_amount_of_money(self, username, deposit_balance, expected_balance):
+        password = "TestPass1!"
+
         # create user
-        create_user_request_dto = CreateUserRequestDTO(username=username, password="TestPass1!", role="USER")
-        create_user_response = requests.post(
-            url="http://localhost:4111/api/v1/admin/users",
-            json=create_user_request_dto.model_dump(),
-            headers={"accept": "*/*", "Authorization": "Basic YWRtaW46YWRtaW4=", "Content-Type": "application/json"},
-        )
-        assert create_user_response.status_code == 201
+        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
+        create_user_response = AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_201_spec(),
+        ).post(create_user_request_dto)
+        create_user_response_dto = CreateUserResponseDTO(**create_user_response.json())
 
-        # login and save auth header
-        login_user_request_dto = LoginUserRequestDTO(username=username, password="TestPass1!")
-        login_user_response = requests.post(
-            url="http://localhost:4111/api/v1/auth/login",
-            json=login_user_request_dto.model_dump(),
-            headers={"accept": "*/*", "Content-Type": "application/json"},
-        )
-
-        assert login_user_response.status_code == 200
-        auth_header = login_user_response.headers.get("Authorization")
-
-        # create an account to deposit into
-        create_account_response = requests.post(
-            url="http://localhost:4111/api/v1/accounts",
-            headers={"accept": "*/*", "Content-Type": "application/json", "Authorization": auth_header},
-        )
-        assert create_account_response.status_code == 201
+        # create account
+        create_account_response = AccountsClient(
+            RequestSpec.user_auth_spec(username=username, password=password),
+            ResponseSpec.response_returns_201_spec(),
+        ).post(None)
         created_account = AccountDTO(**create_account_response.json())
-        account_id = created_account.id
 
         # deposit money
-        deposit_money_request_dto = DepositMoneyRequestDTO(id=account_id, balance=deposit_balance)
-        deposit_response = requests.post(
-            url="http://localhost:4111/api/v1/accounts/deposit",
-            json=deposit_money_request_dto.model_dump(),
-            headers={"accept": "*/*", "Content-Type": "application/json", "Authorization": auth_header},
-        )
-        assert deposit_response.status_code == 200
+        DepositMoneyClient(
+            RequestSpec.user_auth_spec(username=username, password=password),
+            ResponseSpec.response_returns_200_spec(),
+        ).post(DepositMoneyRequestDTO(id=created_account.id, balance=deposit_balance))
 
         # check that the account balance matches
-        get_accounts_response = requests.get(
-            url="http://localhost:4111/api/v1/customer/accounts",
-            headers={"accept": "*/*", "Authorization": auth_header},
-        )
-        assert get_accounts_response.status_code == 200
-        accounts = get_accounts_response.json()
+        get_accounts_response = CustomerAccountsClient(
+            RequestSpec.user_auth_spec(username=username, password=password),
+            ResponseSpec.response_returns_200_spec(),
+        ).get()
+
+        accounts = [AccountDTO(**a) for a in get_accounts_response.json()]
         for account in accounts:
-            account_dto = AccountDTO(**account)
-            if account_dto.id == account_id:
-                assert as_decimal(account_dto.balance) == as_decimal(expected_balance)
+            if account.id == created_account.id:
+                assert as_decimal(account.balance) == as_decimal(expected_balance)
                 break
-        # else выполнится если цикл не будет прерван break, то есть если account не будет найден
         else:
-            raise AssertionError(f"Account {account_id} not found in response")
+            raise AssertionError(f"Account {created_account.id} not found in response")
+
+        # cleanup created user
+        AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_200_deleted_spec(create_user_response_dto.id),
+        ).delete(create_user_response_dto.id)
 
     @pytest.mark.parametrize(
         argnames="username, invalid_deposit_amount, expected_error_message",
@@ -95,56 +90,44 @@ class TestApiDepositMoney:
         ],
     )
     def test_user_cannot_deposit_money(self, username, invalid_deposit_amount, expected_error_message):
-        # create user
-        create_user_request_dto = CreateUserRequestDTO(username=username, password="TestPass1!", role="USER")
-        create_user_response = requests.post(
-            url="http://localhost:4111/api/v1/admin/users",
-            json=create_user_request_dto.model_dump(),
-            headers={"accept": "*/*", "Authorization": "Basic YWRtaW46YWRtaW4=", "Content-Type": "application/json"},
-        )
-        assert create_user_response.status_code == 201
+        password = "TestPass1!"
 
-        # login and save auth header
-        login_user_request_dto = LoginUserRequestDTO(username=username, password="TestPass1!")
-        login_user_response = requests.post(
-            url="http://localhost:4111/api/v1/auth/login",
-            json=login_user_request_dto.model_dump(),
-            headers={"accept": "*/*", "Content-Type": "application/json"},
-        )
-        assert login_user_response.status_code == 200
-        auth_header = login_user_response.headers.get("Authorization")
+        # create user
+        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
+        create_user_response = AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_201_spec(),
+        ).post(create_user_request_dto)
+        create_user_response_dto = CreateUserResponseDTO(**create_user_response.json())
 
         # create an account (initial balance 0)
-        create_account_response = requests.post(
-            url="http://localhost:4111/api/v1/accounts",
-            headers={"accept": "*/*", "Content-Type": "application/json", "Authorization": auth_header},
-        )
-        assert create_account_response.status_code == 201
+        create_account_response = AccountsClient(
+            RequestSpec.user_auth_spec(username=username, password=password),
+            ResponseSpec.response_returns_201_spec(),
+        ).post(None)
         created_account = AccountDTO(**create_account_response.json())
-        account_id = created_account.id
 
         # deposit with invalid amount — should be rejected
-        deposit_money_request_dto = DepositMoneyRequestDTO(id=account_id, balance=invalid_deposit_amount)
-        deposit_response = requests.post(
-            url="http://localhost:4111/api/v1/accounts/deposit",
-            json=deposit_money_request_dto.model_dump(),
-            headers={"accept": "*/*", "Content-Type": "application/json", "Authorization": auth_header},
-        )
-        assert deposit_response.status_code == 400
-        assert deposit_response.text == expected_error_message
+        DepositMoneyClient(
+            RequestSpec.user_auth_spec(username=username, password=password),
+            ResponseSpec.response_returns_400_spec_with_text(expected_error_message),
+        ).post(DepositMoneyRequestDTO(id=created_account.id, balance=invalid_deposit_amount))
 
         # balance must still be 0
-        get_accounts_response = requests.get(
-            url="http://localhost:4111/api/v1/customer/accounts",
-            headers={"accept": "*/*", "Authorization": auth_header},
-        )
-        assert get_accounts_response.status_code == 200
-        accounts = get_accounts_response.json()
+        get_accounts_response = CustomerAccountsClient(
+            RequestSpec.user_auth_spec(username=username, password=password),
+            ResponseSpec.response_returns_200_spec(),
+        ).get()
+        accounts = [AccountDTO(**a) for a in get_accounts_response.json()]
         for account in accounts:
-            account_dto = AccountDTO(**account)
-            if account_dto.id == account_id:
-                assert as_decimal(account_dto.balance) == as_decimal(0)
+            if account.id == created_account.id:
+                assert as_decimal(account.balance) == as_decimal(0)
                 break
-        # else выполнится если цикл не будет прерван break, то есть если account не будет найден
         else:
-            raise AssertionError(f"Account {account_id} not found in response")
+            raise AssertionError(f"Account {created_account.id} not found in response")
+
+        # cleanup created user
+        AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_200_deleted_spec(create_user_response_dto.id),
+        ).delete(create_user_response_dto.id)

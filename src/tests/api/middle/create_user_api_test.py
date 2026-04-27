@@ -1,7 +1,10 @@
-import pytest, requests
+import pytest
 
 from src.main.api.middle.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.middle.DTO.create_user_response_dto import CreateUserResponseDTO
+from src.main.api.middle.client.admin_client import AdminClient
+from src.main.api.middle.specs.request_spec import RequestSpec
+from src.main.api.middle.specs.response_spec import ResponseSpec
 
 
 @pytest.mark.api
@@ -12,10 +15,8 @@ class TestApiCreateUser:
         argvalues=[
             # Username: boundary length 3
             ("Qz8", "Aa1!aaaa", "USER"),
-
             # Username: boundary length 15
             ("TestUser15lengt", "Aa1!aaaa", "ADMIN"),
-
             # Username: equivalence class with allowed separators (._-)
             ("pos_us-er.01", "GoodPass1@", "USER"),
             ("jun-user.02", "GoodPass1#", "ADMIN"),
@@ -24,22 +25,23 @@ class TestApiCreateUser:
     def test_admin_can_create_user_with_valid_credentials(self, username, password, role):
         # create a user and check that the user was created
         create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role=role)
-        create_user_response = requests.post(
-            url="http://localhost:4111/api/v1/admin/users",
-            json=create_user_request_dto.model_dump(),
-            headers={"accept": "*/*", "Authorization": "Basic YWRtaW46YWRtaW4=", "Content-Type": "application/json"},
-        )
+        create_user_response = AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_201_spec()).post(
+            create_user_request_dto)
 
-        assert create_user_response.status_code == 201
-        # response.json() — парсит тело HTTP-ответа (JSON) в Python-словарь (dict).
-        # CreateUserResponseDTO(**...) — берёт этот словарь и создаёт объект CreateUserResponseDTO, 
-        # передавая ключи как именованные аргументы.
         create_user_response_dto = CreateUserResponseDTO(**create_user_response.json())
         assert create_user_response_dto.username == username
         assert create_user_response_dto.role == role
 
         password_hash = create_user_response_dto.password
         assert isinstance(password_hash, str) and len(password_hash.strip()) > 0
+
+        # delete users
+        id = create_user_response_dto.id
+        AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_200_deleted_spec(id)).delete(id)
 
     @pytest.mark.parametrize(
         argnames="username, password, role, error_key, error_value",
@@ -73,30 +75,27 @@ class TestApiCreateUser:
     def test_admin_cannot_create_user_with_invalid_credentials(self, username, password, role, error_key, error_value):
         # create a user and check that the user WAS NOT created
         create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role=role)
-        create_user_response = requests.request(
-            method="POST",
-            url="http://localhost:4111/api/v1/admin/users",
-            json=create_user_request_dto.model_dump(),
-            headers={"accept": "*/*", "Authorization": "Basic YWRtaW46YWRtaW4=", "Content-Type": "application/json"},
-        )
-
-        assert create_user_response.status_code == 400
-        assert error_value in create_user_response.json().get(error_key)
+        AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_400_spec_with_json(error_key, error_value)).post(
+            create_user_request_dto)
 
     def test_admin_cannot_create_user_that_already_exists(self):
         # create a user and check that the user was created
         create_user_request_dto = CreateUserRequestDTO(username="TestDupUsr02", password="TestUser1!", role="USER")
-        create_user_response = requests.post(
-            url="http://localhost:4111/api/v1/admin/users",
-            json=create_user_request_dto.model_dump(),
-            headers={"accept": "*/*", "Authorization": "Basic YWRtaW46YWRtaW4=", "Content-Type": "application/json"},
-        )
-        assert create_user_response.status_code == 201
+        create_user_response = AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_201_spec()
+        ).post(create_user_request_dto)
+        create_user_response_dto = CreateUserResponseDTO(**create_user_response.json())
 
-        create_user_response_second = requests.post(
-            url="http://localhost:4111/api/v1/admin/users",
-            json=create_user_request_dto.model_dump(),
-            headers={"accept": "*/*", "Authorization": "Basic YWRtaW46YWRtaW4=", "Content-Type": "application/json"},
-        )
-        assert create_user_response_second.status_code == 400
-        assert "already exists" in create_user_response_second.text
+        create_user_response_second = AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_400_spec_with_text("already exists")
+        ).post(create_user_request_dto)
+
+        # cleanup created user
+        AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_200_deleted_spec(create_user_response_dto.id),
+        ).delete(create_user_response_dto.id)

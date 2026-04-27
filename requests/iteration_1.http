@@ -16,8 +16,8 @@ Authorization: Basic YWRtaW46YWRtaW4=
 Content-Type: application/json
 
 {
-  "username": "TestUser1",
-  "password": "TestUser1!",
+  "username": "TestUser111",
+  "password": "TestUser111!",
   "role": "USER"
 }
 

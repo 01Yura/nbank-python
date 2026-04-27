@@ -1,57 +1,55 @@
-import pytest, requests
+import pytest
 
 from src.main.api.middle.DTO.create_user_request_dto import CreateUserRequestDTO
+from src.main.api.middle.DTO.create_user_response_dto import CreateUserResponseDTO
 from src.main.api.middle.DTO.customer_profile_response_dto import CustomerProfileResponseDTO
-from src.main.api.middle.DTO.login_user_request_dto import LoginUserRequestDTO
 from src.main.api.middle.DTO.update_profile_request_dto import UpdateProfileRequestDTO
 from src.main.api.middle.DTO.update_profile_response_dto import UpdateProfileResponseDTO
+from src.main.api.middle.client.admin_client import AdminClient
+from src.main.api.middle.client.customer_profile_client import CustomerProfileClient
+from src.main.api.middle.specs.request_spec import RequestSpec
+from src.main.api.middle.specs.response_spec import ResponseSpec
 
 
 @pytest.mark.api
 class TestApiUpdateUserName:
 
     def test_user_can_update_their_name_using_valid_name(self):
-        # create a user
-        create_user_request_dto = CreateUserRequestDTO(username="TestUser24", password="TestPass1!", role="USER")
-        create_user_response = requests.post(
-            url="http://localhost:4111/api/v1/admin/users",
-            json=create_user_request_dto.model_dump(),
-            headers={"accept": "*/*", "Authorization": "Basic YWRtaW46YWRtaW4=", "Content-Type": "application/json"},
-        )
-        assert create_user_response.status_code == 201
+        username = "TestUser24"
+        password = "TestPass1!"
 
-        # login as the user and save his auth header
-        login_user_request_dto = LoginUserRequestDTO(username="TestUser24", password="TestPass1!")
-        login_user_response = requests.post(
-            url="http://localhost:4111/api/v1/auth/login",
-            json=login_user_request_dto.model_dump(),
-            headers={"accept": "*/*", "Content-Type": "application/json"},
-        )
-
-        assert login_user_response.status_code == 200
-        auth_header = login_user_response.headers.get("Authorization")
+        # create user
+        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
+        create_user_response = AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_201_spec(),
+        ).post(create_user_request_dto)
+        create_user_response_dto = CreateUserResponseDTO(**create_user_response.json())
 
         # check initial user name (should be None)
-        get_profile_response = requests.get(
-            url="http://localhost:4111/api/v1/customer/profile",
-            headers={"accept": "*/*", "Authorization": auth_header},
-        )
-        assert get_profile_response.status_code == 200
+        get_profile_response = CustomerProfileClient(
+            RequestSpec.user_auth_spec(username=username, password=password),
+            ResponseSpec.response_returns_200_spec(),
+        ).get()
         profile = CustomerProfileResponseDTO(**get_profile_response.json())
         assert profile.name is None
 
         # change name
         update_profile_request_dto = UpdateProfileRequestDTO(name="New name")
-        change_name_response = requests.put(
-            url="http://localhost:4111/api/v1/customer/profile",
-            headers={"accept": "*/*", "Content-Type": "application/json", "Authorization": auth_header},
-            json=update_profile_request_dto.model_dump(),
-        )
+        update_profile_response = CustomerProfileClient(
+            RequestSpec.user_auth_spec(username=username, password=password),
+            ResponseSpec.response_returns_200_spec(),
+        ).put(update_profile_request_dto)
 
-        assert change_name_response.status_code == 200
-        updated_profile = UpdateProfileResponseDTO(**change_name_response.json())
-        assert updated_profile.message == "Profile updated successfully"
-        assert updated_profile.customer.name == "New name"
+        updated_profile_response_dto = UpdateProfileResponseDTO(**update_profile_response.json())
+        assert updated_profile_response_dto.message == "Profile updated successfully"
+        assert updated_profile_response_dto.customer.name == "New name"
+
+        # cleanup created user
+        AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_200_deleted_spec(create_user_response_dto.id),
+        ).delete(create_user_response_dto.id)
 
     @pytest.mark.parametrize(
         argnames=("username", "invalid_name"),
@@ -63,50 +61,41 @@ class TestApiUpdateUserName:
         ]
     )
     def test_user_cannot_update_their_name_using_invalid_name(self, username, invalid_name):
-        # create a user
-        create_user_request_dto = CreateUserRequestDTO(username=username, password="TestPass1!", role="USER")
-        create_user_response = requests.post(
-            url="http://localhost:4111/api/v1/admin/users",
-            json=create_user_request_dto.model_dump(),
-            headers={"accept": "*/*", "Authorization": "Basic YWRtaW46YWRtaW4=", "Content-Type": "application/json"},
-        )
-        assert create_user_response.status_code == 201
+        password = "TestPass1!"
 
-        # login as the user and save his auth header
-        login_user_request_dto = LoginUserRequestDTO(username=username, password="TestPass1!")
-        login_user_response = requests.post(
-            url="http://localhost:4111/api/v1/auth/login",
-            json=login_user_request_dto.model_dump(),
-            headers={"accept": "*/*", "Content-Type": "application/json"},
-        )
-
-        assert login_user_response.status_code == 200
-        auth_header = login_user_response.headers.get("Authorization")
+        # create user
+        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
+        create_user_response = AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_201_spec(),
+        ).post(create_user_request_dto)
+        create_user_response_dto = CreateUserResponseDTO(**create_user_response.json())
 
         # check initial user name (should be None)
-        get_profile_response = requests.get(
-            url="http://localhost:4111/api/v1/customer/profile",
-            headers={"accept": "*/*", "Authorization": auth_header},
-        )
-        assert get_profile_response.status_code == 200
+        get_profile_response = CustomerProfileClient(
+            RequestSpec.user_auth_spec(username=username, password=password),
+            ResponseSpec.response_returns_200_spec(),
+        ).get()
         profile = CustomerProfileResponseDTO(**get_profile_response.json())
         assert profile.name is None
 
         # change name using invalid value
         update_profile_request_dto = UpdateProfileRequestDTO(name=invalid_name)
-        change_name_response = requests.put(
-            url="http://localhost:4111/api/v1/customer/profile",
-            headers={"accept": "*/*", "Content-Type": "application/json", "Authorization": auth_header},
-            json=update_profile_request_dto.model_dump(),
-        )
-
-        assert change_name_response.status_code == 400
+        CustomerProfileClient(
+            RequestSpec.user_auth_spec(username=username, password=password),
+            ResponseSpec.response_returns_400_simple_spec(),
+        ).put(update_profile_request_dto)
 
         # check that name has not been updated
-        response_after_change = requests.get(
-            url="http://localhost:4111/api/v1/customer/profile",
-            headers={"accept": "*/*", "Authorization": auth_header},
-        )
-        assert response_after_change.status_code == 200
+        response_after_change = CustomerProfileClient(
+            RequestSpec.user_auth_spec(username=username, password=password),
+            ResponseSpec.response_returns_200_spec(),
+        ).get()
         profile_after_change = CustomerProfileResponseDTO(**response_after_change.json())
         assert profile_after_change.name is None
+
+        # cleanup created user
+        AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_200_deleted_spec(create_user_response_dto.id),
+        ).delete(create_user_response_dto.id)
