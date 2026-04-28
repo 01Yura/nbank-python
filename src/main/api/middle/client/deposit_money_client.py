@@ -8,7 +8,7 @@ from src.main.api.middle.client.base_client import BaseClient
 class DepositMoneyClient(BaseClient):
     def post(self, deposit_money_request: DepositMoneyRequestDTO) -> Response:
         response = requests.post(
-            url=f"{self.base_url}/api/v1/accounts/deposit",
+            url=f"{self.base_url}/accounts/deposit",
             headers=self.headers,
             json=deposit_money_request.model_dump(),
         )

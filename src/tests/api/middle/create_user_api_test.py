@@ -1,6 +1,7 @@
 import pytest
 
 from src.main.api.middle.DTO.create_user_request_dto import CreateUserRequestDTO
+from src.main.api.middle.generator.random_data import RandomData
 from src.main.api.middle.DTO.create_user_response_dto import CreateUserResponseDTO
 from src.main.api.middle.client.admin_client import AdminClient
 from src.main.api.middle.specs.request_spec import RequestSpec
@@ -46,30 +47,31 @@ class TestApiCreateUser:
     @pytest.mark.parametrize(
         argnames="username, password, role, error_key, error_value",
         argvalues=[
-            # Username field validation
-            ("", "TestUser2!", "USER", "username", "Username cannot be blank"),
-            ("Te", "TestUser3!", "USER", "username", "Username must be between 3 and 15 characters"),
-            ("TestUserUserUser", "TestUser4!", "USER", "username", "Username must be between 3 and 15 characters"),
-            ("TestUser5#", "TestUser5!", "USER", "username",
+            # Username field validation — password must be valid so the error is tied to username
+            ("", RandomData.generate_password(), "USER", "username", "Username cannot be blank"),
+            ("Te", RandomData.generate_password(), "USER", "username", "Username must be between 3 and 15 characters"),
+            ("TestUserUserUser", RandomData.generate_password(), "USER", "username",
+             "Username must be between 3 and 15 characters"),
+            ("TestUser5#", RandomData.generate_password(), "USER", "username",
              "Username must contain only letters, digits, dashes, underscores, and dots"),
 
-            # Role field validation
-            ("TestUser6", "TestUser16", "SUPERADMIN", "role", "Role must be either 'ADMIN' or 'USER'"),
+            # Role field validation — username and password are valid; role is invalid
+            (RandomData.generate_username(), RandomData.generate_password(), "SUPERADMIN", "role", "Role must be either 'ADMIN' or 'USER'"),
 
-            # Password field validation
-            ("TestUser7", "Seven7!", "USER", "password",
+            # Password field validation — username must be valid; password is intentionally wrong
+            (RandomData.generate_username(), "Seven7!", "USER", "password",
              "Password must contain at least one digit, one lower case, one upper case, one special character, no spaces, and be at least 8 characters long"),
-            ("TestUser8", "NoSpecial1", "USER", "password",
+            (RandomData.generate_username(), "NoSpecial1", "USER", "password",
              "Password must contain at least one digit, one lower case, one upper case, one special character, no spaces, and be at least 8 characters long"),
-            ("TestUser9", "nouppercase1!", "USER", "password",
+            (RandomData.generate_username(), "nouppercase1!", "USER", "password",
              "Password must contain at least one digit, one lower case, one upper case, one special character, no spaces, and be at least 8 characters long"),
-            ("TestUser10", "NOLOWERCASE1!", "USER", "password",
+            (RandomData.generate_username(), "NOLOWERCASE1!", "USER", "password",
              "Password must contain at least one digit, one lower case, one upper case, one special character, no spaces, and be at least 8 characters long"),
-            ("TestUser11", "NoNumber!", "USER", "password",
+            (RandomData.generate_username(), "NoNumber!", "USER", "password",
              "Password must contain at least one digit, one lower case, one upper case, one special character, no spaces, and be at least 8 characters long"),
-            ("TestUser12", "With spaces1!", "USER", "password",
+            (RandomData.generate_username(), "With spaces1!", "USER", "password",
              "Password must contain at least one digit, one lower case, one upper case, one special character, no spaces, and be at least 8 characters long"),
-            ("TestUser13", "", "USER", "password", "Password cannot be blank"),
+            (RandomData.generate_username(), "", "USER", "password", "Password cannot be blank"),
         ]
     )
     def test_admin_cannot_create_user_with_invalid_credentials(self, username, password, role, error_key, error_value):
@@ -82,7 +84,11 @@ class TestApiCreateUser:
 
     def test_admin_cannot_create_user_that_already_exists(self):
         # create a user and check that the user was created
-        create_user_request_dto = CreateUserRequestDTO(username="TestDupUsr02", password="TestUser1!", role="USER")
+        create_user_request_dto = CreateUserRequestDTO(
+            username=RandomData.generate_username(),
+            password=RandomData.generate_password(),
+            role="USER",
+        )
         create_user_response = AdminClient(
             RequestSpec.admin_auth_spec(),
             ResponseSpec.response_returns_201_spec()

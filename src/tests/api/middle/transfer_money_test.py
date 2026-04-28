@@ -13,6 +13,7 @@ from src.main.api.middle.client.admin_client import AdminClient
 from src.main.api.middle.client.customer_accounts_client import CustomerAccountsClient
 from src.main.api.middle.client.deposit_money_client import DepositMoneyClient
 from src.main.api.middle.client.transfer_money_client import TransferMoneyClient
+from src.main.api.middle.generator.random_data import RandomData
 from src.main.api.middle.specs.request_spec import RequestSpec
 from src.main.api.middle.specs.response_spec import ResponseSpec
 
@@ -27,18 +28,19 @@ def as_decimal(x) -> Decimal:
 class TestApiTransferMoney:
 
     @pytest.mark.parametrize(
-        argnames="username, transfer_amount, deposit_per_cycle, deposit_threshold, expected_receiver_balance",
+        argnames="transfer_amount, deposit_per_cycle, deposit_threshold, expected_receiver_balance",
         argvalues=[
             # Positive: user can transfer a small amount after building balance
-            ("TrfUser1", 1, 100, 500, 1.0),
+            (1, 100, 500, 1.0),
             # Positive: user can transfer max allowed amount
-            ("TrfUser2", 10000, 5000, 15000, 10000.0),
+            (10000, 5000, 15000, 10000.0),
             # Positive: user can transfer just below max
-            ("TrfUser3", 9999.99, 5000, 10000, 9999.99),
+            (9999.99, 5000, 10000, 9999.99),
         ],
     )
-    def test_user_can_transfer_money(self, username, transfer_amount, deposit_per_cycle, deposit_threshold, expected_receiver_balance):
-        password = "TestPass1!"
+    def test_user_can_transfer_money(self, transfer_amount, deposit_per_cycle, deposit_threshold, expected_receiver_balance):
+        username = RandomData.generate_username()
+        password = RandomData.generate_password()
 
         # create user
         create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
@@ -114,19 +116,22 @@ class TestApiTransferMoney:
         ).delete(create_user_response_dto.id)
 
     @pytest.mark.parametrize(
-        argnames="username, transfer_amount, deposit_per_cycle, deposit_threshold, expected_receiver_balance, error_substring",
+        argnames="transfer_amount, deposit_per_cycle, deposit_threshold, expected_receiver_balance, error_substring",
         argvalues=[
             # Negative: cannot transfer if funds are insufficient
-            ("TrfNoUser1", 1000, 100, 200, 0.0, "Invalid transfer: insufficient funds or invalid accounts"),
+            (1000, 100, 200, 0.0, "Invalid transfer: insufficient funds or invalid accounts"),
             # Negative: cannot transfer negative or zero (API validates min amount before transfer rules)
-            ("TrfNoUser2", -0.01, 1, 2, 0.0, "Transfer amount must be at least 0.01"),
-            ("TrfNoUser3", 0, 1, 2, 0.0, "Transfer amount must be at least 0.01"),
+            (-0.01, 1, 2, 0.0, "Transfer amount must be at least 0.01"),
+            (0, 1, 2, 0.0, "Transfer amount must be at least 0.01"),
             # Negative: cannot transfer more than 10000
-            ("TrfNoUser4", 10000.01, 5000, 11000, 0.0, "Transfer amount cannot exceed 10000"),
+            (10000.01, 5000, 11000, 0.0, "Transfer amount cannot exceed 10000"),
         ],
     )
-    def test_user_cannot_transfer_money(self, username, transfer_amount, deposit_per_cycle, deposit_threshold, expected_receiver_balance, error_substring):
-        password = "TestPass1!"
+    def test_user_cannot_transfer_money(
+        self, transfer_amount, deposit_per_cycle, deposit_threshold, expected_receiver_balance, error_substring
+    ):
+        username = RandomData.generate_username()
+        password = RandomData.generate_password()
 
         # create user
         create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")

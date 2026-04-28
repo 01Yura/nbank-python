@@ -7,6 +7,7 @@ from src.main.api.middle.DTO.update_profile_request_dto import UpdateProfileRequ
 from src.main.api.middle.DTO.update_profile_response_dto import UpdateProfileResponseDTO
 from src.main.api.middle.client.admin_client import AdminClient
 from src.main.api.middle.client.customer_profile_client import CustomerProfileClient
+from src.main.api.middle.generator.random_data import RandomData
 from src.main.api.middle.specs.request_spec import RequestSpec
 from src.main.api.middle.specs.response_spec import ResponseSpec
 
@@ -15,8 +16,8 @@ from src.main.api.middle.specs.response_spec import ResponseSpec
 class TestApiUpdateUserName:
 
     def test_user_can_update_their_name_using_valid_name(self):
-        username = "TestUser24"
-        password = "TestPass1!"
+        username = RandomData.generate_username()
+        password = RandomData.generate_password()
 
         # create user
         create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
@@ -52,16 +53,17 @@ class TestApiUpdateUserName:
         ).delete(create_user_response_dto.id)
 
     @pytest.mark.parametrize(
-        argnames=("username", "invalid_name"),
-        argvalues=[
-            ("InvalidName_1", "Newname"),
-            ("InvalidName_2", "New name1"),
-            ("InvalidName_3", "New name!"),
-            ("InvalidName_4", ""),
-        ]
+        "invalid_name",
+        [
+            "Newname",
+            "New name1",
+            "New name!",
+            "",
+        ],
     )
-    def test_user_cannot_update_their_name_using_invalid_name(self, username, invalid_name):
-        password = "TestPass1!"
+    def test_user_cannot_update_their_name_using_invalid_name(self, invalid_name):
+        username = RandomData.generate_username()
+        password = RandomData.generate_password()
 
         # create user
         create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")

@@ -9,7 +9,7 @@ class AdminClient(BaseClient):
 
     def post(self, create_user_request: CreateUserRequestDTO) -> Response:
         create_user_response = requests.post(
-            url=f"{self.base_url}/api/v1/admin/users",
+            url=f"{self.base_url}/admin/users",
             headers=self.headers,
             json=create_user_request.model_dump())
         self.response_spec(create_user_response)
@@ -17,7 +17,7 @@ class AdminClient(BaseClient):
 
     def delete(self, id: int) -> Response:
         delete_user_response = requests.delete(
-            url=f"{self.base_url}/api/v1/admin/users/{id}",
+            url=f"{self.base_url}/admin/users/{id}",
             headers=self.headers)
         self.response_spec(delete_user_response)
         return delete_user_response

@@ -10,6 +10,7 @@ from src.main.api.middle.client.accounts_client import AccountsClient
 from src.main.api.middle.client.admin_client import AdminClient
 from src.main.api.middle.client.customer_accounts_client import CustomerAccountsClient
 from src.main.api.middle.client.deposit_money_client import DepositMoneyClient
+from src.main.api.middle.generator.random_data import RandomData
 from src.main.api.middle.specs.request_spec import RequestSpec
 from src.main.api.middle.specs.response_spec import ResponseSpec
 
@@ -24,18 +25,19 @@ def as_decimal(x) -> Decimal:
 class TestApiDepositMoney:
 
     @pytest.mark.parametrize(
-        argnames="username, deposit_balance, expected_balance",
+        argnames="deposit_balance, expected_balance",
         argvalues=[
             # Positive: authorized user can deposit a small valid amount
-            ("DepositUser1", 0.01, 0.01),
+            (0.01, 0.01),
             # Positive: authorized user can deposit below the 5000 limit
-            ("DepositUser2", 4999.99, 4999.99),
+            (4999.99, 4999.99),
             # Positive: authorized user can deposit up to the 5000 limit
-            ("DepositUser3", 5000.00, 5000.00),
-        ]
+            (5000.00, 5000.00),
+        ],
     )
-    def test_user_can_deposit_valid_amount_of_money(self, username, deposit_balance, expected_balance):
-        password = "TestPass1!"
+    def test_user_can_deposit_valid_amount_of_money(self, deposit_balance, expected_balance):
+        username = RandomData.generate_username()
+        password = RandomData.generate_password()
 
         # create user
         create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
@@ -79,18 +81,19 @@ class TestApiDepositMoney:
         ).delete(create_user_response_dto.id)
 
     @pytest.mark.parametrize(
-        argnames="username, invalid_deposit_amount, expected_error_message",
+        argnames="invalid_deposit_amount, expected_error_message",
         argvalues=[
             # Negative: authorized user cannot deposit if amount is negative
-            ("CannotDepUser1", -1, "Deposit amount must be at least 0.01"),
+            (-1, "Deposit amount must be at least 0.01"),
             # Negative: authorized user cannot deposit if amount is 0
-            ("CannotDepUser2", 0, "Deposit amount must be at least 0.01"),
+            (0, "Deposit amount must be at least 0.01"),
             # Negative: authorized user cannot deposit if amount exceeds 5000
-            ("CannotDepUser3", 5000.01, "Deposit amount cannot exceed 5000"),
+            (5000.01, "Deposit amount cannot exceed 5000"),
         ],
     )
-    def test_user_cannot_deposit_money(self, username, invalid_deposit_amount, expected_error_message):
-        password = "TestPass1!"
+    def test_user_cannot_deposit_money(self, invalid_deposit_amount, expected_error_message):
+        username = RandomData.generate_username()
+        password = RandomData.generate_password()
 
         # create user
         create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")

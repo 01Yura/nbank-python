@@ -5,6 +5,7 @@ from src.main.api.middle.DTO.create_user_response_dto import CreateUserResponseD
 from src.main.api.middle.DTO.login_user_request_dto import LoginUserRequestDTO
 from src.main.api.middle.client.admin_client import AdminClient
 from src.main.api.middle.client.auth_client import AuthClient
+from src.main.api.middle.generator.random_data import RandomData
 from src.main.api.middle.specs.request_spec import RequestSpec
 from src.main.api.middle.specs.response_spec import ResponseSpec
 
@@ -14,8 +15,8 @@ class TestApiLoginUser:
 
     def test_regular_user_can_login_with_valid_credentials(self):
         # create user
-        username = "TestUser20"
-        password = "TestPass1!"
+        username = RandomData.generate_username()
+        password = RandomData.generate_password()
         create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
         create_user_response = AdminClient(
             RequestSpec.admin_auth_spec(),
@@ -39,15 +40,19 @@ class TestApiLoginUser:
         ).delete(create_user_response_dto.id)
 
     @pytest.mark.parametrize(
-        argnames=("created_username", "created_password", "login_username", "login_password"),
-        argvalues=[
-            # Negative: correct password, incorrect username
-            ("LoginNegUser1", "TestPass1!", "LoginNegWRONG", "TestPass1!"),
-            # Negative: correct username, incorrect password
-            ("LoginNegUser2", "TestPass1!", "LoginNegUser2", "TestPass1!_WRONG"),
+        "wrong_field",
+        [
+            "username",
+            "password",
         ],
     )
-    def test_user_cannot_login_with_invalid_username_or_password(self, created_username, created_password, login_username, login_password):
+    def test_user_cannot_login_with_invalid_username_or_password(self, wrong_field):
+        created_username = RandomData.generate_username()
+        created_password = RandomData.generate_password()
+        if wrong_field == "username":
+            login_username, login_password = created_username + "X", created_password
+        else:
+            login_username, login_password = created_username, created_password + "WRONG"
         # create user
         create_user_request_dto = CreateUserRequestDTO(username=created_username, password=created_password, role="USER")
         create_user_response = AdminClient(

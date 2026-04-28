@@ -7,7 +7,7 @@ from src.main.api.middle.client.base_client import BaseClient
 class CustomerAccountsClient(BaseClient):
     def get(self) -> Response:
         response = requests.get(
-            url=f"{self.base_url}/api/v1/customer/accounts",
+            url=f"{self.base_url}/customer/accounts",
             headers=self.headers,
         )
         self.response_spec(response)

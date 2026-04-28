@@ -8,7 +8,7 @@ from src.main.api.middle.client.base_client import BaseClient
 class AccountsClient(BaseClient):
     def post(self, dto: BaseDTO | None) -> Response:
         response = requests.post(
-            url=f"{self.base_url}/api/v1/accounts",
+            url=f"{self.base_url}/accounts",
             headers=self.headers,
         )
         self.response_spec(response)

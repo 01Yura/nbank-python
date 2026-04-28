@@ -6,6 +6,7 @@ from src.main.api.middle.DTO.create_user_response_dto import CreateUserResponseD
 from src.main.api.middle.client.accounts_client import AccountsClient
 from src.main.api.middle.client.admin_client import AdminClient
 from src.main.api.middle.client.customer_accounts_client import CustomerAccountsClient
+from src.main.api.middle.generator.random_data import RandomData
 from src.main.api.middle.specs.request_spec import RequestSpec
 from src.main.api.middle.specs.response_spec import ResponseSpec
 
@@ -15,8 +16,8 @@ class TestApiCreateAccount:
 
     def test_user_can_create_account(self):
         # create user
-        username = "TestUser23"
-        password = "TestPass1!"
+        username = RandomData.generate_username()
+        password = RandomData.generate_password()
         create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
         create_user_response = AdminClient(
             RequestSpec.admin_auth_spec(),

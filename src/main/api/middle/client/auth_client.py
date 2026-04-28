@@ -8,7 +8,7 @@ from src.main.api.middle.client.base_client import BaseClient
 class AuthClient(BaseClient):
     def post(self, login_user_request: LoginUserRequestDTO) -> Response:
         login_user_response = requests.post(
-            url=f"{self.base_url}/api/v1/auth/login",
+            url=f"{self.base_url}/auth/login",
             headers=self.headers,
             json=login_user_request.model_dump(),
         )

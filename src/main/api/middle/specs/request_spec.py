@@ -1,10 +1,13 @@
 import logging
+
 import requests
+
 from src.main.api.middle.DTO.login_user_request_dto import LoginUserRequestDTO
+from src.main.api.middle.configs.config import Config
 
 
 class RequestSpec:
-    BASE_URL = "http://localhost:4111"
+    BASE_URL = Config.get_property("apiBaseurl") + Config.get_property("apiVersion")
 
     @staticmethod
     def _default_request_headers():
@@ -23,7 +26,7 @@ class RequestSpec:
     @staticmethod
     def user_auth_spec(username: str, password: str):
         login_user_request_dto = LoginUserRequestDTO(username=username, password=password)
-        login_user_response = requests.post(url=f"{RequestSpec.BASE_URL}/api/v1/auth/login",
+        login_user_response = requests.post(url=f"{RequestSpec.BASE_URL}/auth/login",
                                             headers=RequestSpec._default_request_headers(),
                                             json=login_user_request_dto.model_dump())
 

@@ -8,7 +8,7 @@ from src.main.api.middle.client.base_client import BaseClient
 class CustomerProfileClient(BaseClient):
     def get(self) -> Response:
         response = requests.get(
-            url=f"{self.base_url}/api/v1/customer/profile",
+            url=f"{self.base_url}/customer/profile",
             headers=self.headers,
         )
         self.response_spec(response)
@@ -16,7 +16,7 @@ class CustomerProfileClient(BaseClient):
 
     def put(self, update_profile_request: UpdateProfileRequestDTO) -> Response:
         response = requests.put(
-            url=f"{self.base_url}/api/v1/customer/profile",
+            url=f"{self.base_url}/customer/profile",
             headers=self.headers,
             json=update_profile_request.model_dump(),
         )
