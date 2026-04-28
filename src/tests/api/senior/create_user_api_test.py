@@ -1,0 +1,96 @@
+import pytest
+
+from conftest import api_manager
+from src.main.api.middle.DTO.create_user_request_dto import CreateUserRequestDTO
+from src.main.api.middle.DTO.create_user_response_dto import CreateUserResponseDTO
+from src.main.api.middle.client.admin_client import AdminClient
+from src.main.api.middle.generator.random_data import RandomData
+from src.main.api.middle.specs.request_spec import RequestSpec
+from src.main.api.middle.specs.response_spec import ResponseSpec
+from src.main.api.senior.classes.api_manager import ApiManager
+
+
+@pytest.mark.api
+class TestApiCreateUser:
+
+    @pytest.mark.usefixtures("api_manager")
+    @pytest.mark.parametrize(
+        argnames="username, password, role",
+        argvalues=[
+            # Username: boundary length 3
+            ("Qz8", "Aa1!aaaa", "USER"),
+            # Username: boundary length 15
+            ("TestUser15lengt", "Aa1!aaaa", "ADMIN"),
+            # Username: equivalence class with allowed separators (._-)
+            ("pos_us-er.01", "GoodPass1@", "USER"),
+            ("jun-user.02", "GoodPass1#", "ADMIN"),
+        ]
+    )
+    def test_admin_can_create_user_with_valid_credentials(self, api_manager: ApiManager, username, password, role):
+        # create a user
+        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role=role)
+        api_manager.admin_steps.create_user(create_user_request_dto)
+        # все ассерты уже зашиты в метод create_user() класса AdminSteps, поэтому ничего больше ассертить не надо
+
+    @pytest.mark.parametrize(
+        argnames="username, password, role, error_key, error_value",
+        argvalues=[
+            # Username field validation — password must be valid so the error is tied to username
+            ("", RandomData.generate_password(), "USER", "username", "Username cannot be blank"),
+            ("Te", RandomData.generate_password(), "USER", "username", "Username must be between 3 and 15 characters"),
+            ("TestUserUserUser", RandomData.generate_password(), "USER", "username",
+             "Username must be between 3 and 15 characters"),
+            ("TestUser5#", RandomData.generate_password(), "USER", "username",
+             "Username must contain only letters, digits, dashes, underscores, and dots"),
+
+            # Role field validation — username and password are valid; role is invalid
+            (RandomData.generate_username(), RandomData.generate_password(), "SUPERADMIN", "role",
+             "Role must be either 'ADMIN' or 'USER'"),
+
+            # Password field validation — username must be valid; password is intentionally wrong
+            (RandomData.generate_username(), "Seven7!", "USER", "password",
+             "Password must contain at least one digit, one lower case, one upper case, one special character, no spaces, and be at least 8 characters long"),
+            (RandomData.generate_username(), "NoSpecial1", "USER", "password",
+             "Password must contain at least one digit, one lower case, one upper case, one special character, no spaces, and be at least 8 characters long"),
+            (RandomData.generate_username(), "nouppercase1!", "USER", "password",
+             "Password must contain at least one digit, one lower case, one upper case, one special character, no spaces, and be at least 8 characters long"),
+            (RandomData.generate_username(), "NOLOWERCASE1!", "USER", "password",
+             "Password must contain at least one digit, one lower case, one upper case, one special character, no spaces, and be at least 8 characters long"),
+            (RandomData.generate_username(), "NoNumber!", "USER", "password",
+             "Password must contain at least one digit, one lower case, one upper case, one special character, no spaces, and be at least 8 characters long"),
+            (RandomData.generate_username(), "With spaces1!", "USER", "password",
+             "Password must contain at least one digit, one lower case, one upper case, one special character, no spaces, and be at least 8 characters long"),
+            (RandomData.generate_username(), "", "USER", "password", "Password cannot be blank"),
+        ]
+    )
+    def test_admin_cannot_create_user_with_invalid_credentials(self, username, password, role, error_key, error_value):
+        # create a user and check that the user WAS NOT created
+        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role=role)
+        AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_400_spec_with_json(error_key, error_value)).post(
+            create_user_request_dto)
+
+    def test_admin_cannot_create_user_that_already_exists(self):
+        # create a user and check that the user was created
+        create_user_request_dto = CreateUserRequestDTO(
+            username=RandomData.generate_username(),
+            password=RandomData.generate_password(),
+            role="USER",
+        )
+        create_user_response = AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_201_spec()
+        ).post(create_user_request_dto)
+        create_user_response_dto = CreateUserResponseDTO(**create_user_response.json())
+
+        create_user_response_second = AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_400_spec_with_text("already exists")
+        ).post(create_user_request_dto)
+
+        # cleanup created user
+        AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_200_deleted_spec(create_user_response_dto.id),
+        ).delete(create_user_response_dto.id)

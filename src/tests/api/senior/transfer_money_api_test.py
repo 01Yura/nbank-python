@@ -26,20 +26,19 @@ def as_decimal(x) -> Decimal:
 
 @pytest.mark.api
 class TestApiTransferMoney:
-    
+
     @pytest.mark.parametrize(
         argnames="transfer_amount, deposit_per_cycle, deposit_threshold, expected_receiver_balance",
         argvalues=[
             # Positive: user can transfer a small amount after building balance
-            (1, 100, 200, 1.0),
+            (1, 100, 500, 1.0),
             # Positive: user can transfer max allowed amount
             (10000, 5000, 15000, 10000.0),
             # Positive: user can transfer just below max
             (9999.99, 5000, 10000, 9999.99),
         ],
     )
-    def test_user_can_transfer_money(self, transfer_amount, deposit_per_cycle, deposit_threshold,
-                                     expected_receiver_balance):
+    def test_user_can_transfer_money(self, transfer_amount, deposit_per_cycle, deposit_threshold, expected_receiver_balance):
         username = RandomData.generate_username()
         password = RandomData.generate_password()
 
@@ -129,7 +128,7 @@ class TestApiTransferMoney:
         ],
     )
     def test_user_cannot_transfer_money(
-            self, transfer_amount, deposit_per_cycle, deposit_threshold, expected_receiver_balance, error_substring
+        self, transfer_amount, deposit_per_cycle, deposit_threshold, expected_receiver_balance, error_substring
     ):
         username = RandomData.generate_username()
         password = RandomData.generate_password()
