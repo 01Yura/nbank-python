@@ -21,7 +21,7 @@ class CrudClient(HttpClient, CrudEndpointInterface):
         body = dto.model_dump() if dto is not None else None
         response = requests.post(
             url=f"{Config.get_property('apiBaseurl')}{Config.get_property('apiVersion')}{self.endpoint.value.url}",
-            headers=self.request_spec.get('headers'),
+            headers=self.request_spec,
             json=body)
         self.response_spec(response)
 
@@ -39,6 +39,6 @@ class CrudClient(HttpClient, CrudEndpointInterface):
     def delete(self, id: int) -> Response | None:
         response = requests.delete(
             url=f"{Config.get_property('apiBaseurl')}{Config.get_property('apiVersion')}{self.endpoint.value.url}/{id}",
-            headers=self.request_spec.get('headers'))
+            headers=self.request_spec)
         self.response_spec(response)
         return response

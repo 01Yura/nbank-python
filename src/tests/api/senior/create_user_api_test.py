@@ -1,11 +1,7 @@
 import pytest
 
 from src.main.api.middle.DTO.create_user_request_dto import CreateUserRequestDTO
-from src.main.api.middle.DTO.create_user_response_dto import CreateUserResponseDTO
-from src.main.api.middle.client.admin_client import AdminClient
 from src.main.api.middle.generator.random_data import RandomData
-from src.main.api.middle.specs.request_spec import RequestSpec
-from src.main.api.middle.specs.response_spec import ResponseSpec
 from src.main.api.senior.classes.api_manager import ApiManager
 
 
@@ -24,7 +20,7 @@ class TestApiCreateUser:
             ("jun-user.02", "GoodPass1#", "ADMIN"),
         ]
     )
-    # этот декоратор не нужен, т.к. api_manager будет передан в тест автоматически так как мы указали его в аргументах теста
+    # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
     @pytest.mark.usefixtures("api_manager")
     def test_admin_can_create_user_with_valid_credentials(self, api_manager: ApiManager, username, password, role):
         # create a user
@@ -63,33 +59,20 @@ class TestApiCreateUser:
             (RandomData.generate_username(), "", "USER", "password", "Password cannot be blank"),
         ]
     )
+    # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
     @pytest.mark.usefixtures("api_manager")
     def test_admin_cannot_create_user_with_invalid_credentials(self, api_manager: ApiManager, username, password, role,
                                                                error_key, error_value):
-        # create a user and check that the user WAS NOT created
         create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role=role)
         api_manager.admin_steps.create_invalid_user(create_user_request_dto, error_key, error_value)
 
-    def test_admin_cannot_create_user_that_already_exists(self):
+    # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
+    @pytest.mark.usefixtures("api_manager")
+    def test_admin_cannot_create_user_that_already_exists(self, api_manager: ApiManager):
         # create a user and check that the user was created
-        create_user_request_dto = CreateUserRequestDTO(
-            username=RandomData.generate_username(),
-            password=RandomData.generate_password(),
-            role="USER",
-        )
-        create_user_response = AdminClient(
-            RequestSpec.admin_auth_spec(),
-            ResponseSpec.response_returns_201_spec()
-        ).post(create_user_request_dto)
-        create_user_response_dto = CreateUserResponseDTO(**create_user_response.json())
-
-        create_user_response_second = AdminClient(
-            RequestSpec.admin_auth_spec(),
-            ResponseSpec.response_returns_400_spec_with_text("already exists")
-        ).post(create_user_request_dto)
-
-        # cleanup created user
-        AdminClient(
-            RequestSpec.admin_auth_spec(),
-            ResponseSpec.response_returns_200_deleted_spec(create_user_response_dto.id),
-        ).delete(create_user_response_dto.id)
+        create_user_request_dto = CreateUserRequestDTO(username=RandomData.generate_username(),
+                                                       password=RandomData.generate_password(),
+                                                       role="USER",
+                                                       )
+        api_manager.admin_steps.create_user(create_user_request_dto)
+        api_manager.admin_steps.create_already_existing_user(create_user_request_dto)
