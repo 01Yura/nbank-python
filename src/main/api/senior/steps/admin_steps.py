@@ -31,3 +31,10 @@ class AdminSteps(BaseSteps):
             RequestSpec.admin_auth_spec(),
             ResponseSpec.response_returns_200_deleted_spec(id)).delete(id)
          )
+
+    def create_invalid_user(self, create_user_request_dto: CreateUserRequestDTO, error_key: str, error_value: str):
+        # try to create user with invalid data
+        AdminClient(
+            RequestSpec.admin_auth_spec(),
+            ResponseSpec.response_returns_400_spec_with_json(error_key, error_value)).post(
+            create_user_request_dto)

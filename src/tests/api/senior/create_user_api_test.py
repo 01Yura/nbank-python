@@ -1,6 +1,5 @@
 import pytest
 
-from conftest import api_manager
 from src.main.api.middle.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.middle.DTO.create_user_response_dto import CreateUserResponseDTO
 from src.main.api.middle.client.admin_client import AdminClient
@@ -13,7 +12,6 @@ from src.main.api.senior.classes.api_manager import ApiManager
 @pytest.mark.api
 class TestApiCreateUser:
 
-    @pytest.mark.usefixtures("api_manager")
     @pytest.mark.parametrize(
         argnames="username, password, role",
         argvalues=[
@@ -26,6 +24,8 @@ class TestApiCreateUser:
             ("jun-user.02", "GoodPass1#", "ADMIN"),
         ]
     )
+    # этот декоратор не нужен, т.к. api_manager будет передан в тест автоматически так как мы указали его в аргументах теста
+    @pytest.mark.usefixtures("api_manager")
     def test_admin_can_create_user_with_valid_credentials(self, api_manager: ApiManager, username, password, role):
         # create a user
         create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role=role)
@@ -63,13 +63,12 @@ class TestApiCreateUser:
             (RandomData.generate_username(), "", "USER", "password", "Password cannot be blank"),
         ]
     )
-    def test_admin_cannot_create_user_with_invalid_credentials(self, username, password, role, error_key, error_value):
+    @pytest.mark.usefixtures("api_manager")
+    def test_admin_cannot_create_user_with_invalid_credentials(self, api_manager: ApiManager, username, password, role,
+                                                               error_key, error_value):
         # create a user and check that the user WAS NOT created
         create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role=role)
-        AdminClient(
-            RequestSpec.admin_auth_spec(),
-            ResponseSpec.response_returns_400_spec_with_json(error_key, error_value)).post(
-            create_user_request_dto)
+        api_manager.admin_steps.create_invalid_user(create_user_request_dto, error_key, error_value)
 
     def test_admin_cannot_create_user_that_already_exists(self):
         # create a user and check that the user was created

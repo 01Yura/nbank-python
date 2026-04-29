@@ -36,5 +36,5 @@ class RequestSpec:
             headers["Authorization"] = auth_header
             return {"headers": headers, "base_url": RequestSpec.BASE_URL}
 
-        logging.error(f"Authentication faild for {username} with status code {login_user_response.status_code}")
+        logging.error(f"Authentication failed for {username} with status code {login_user_response.status_code}")
         raise Exception("Failed to authenticate user")

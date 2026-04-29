@@ -23,6 +23,7 @@ def api_manager(created_objects):
 
 def cleanup_objects(objects: list[Any]):
     api_manager = ApiManager(objects)
+# если список пустой, то ничего не происходит, никакого вывода в консоль не будет
     for obj in objects:
         if isinstance(obj, CreateUserResponseDTO):
             api_manager.admin_steps.delete_user(obj.id)
