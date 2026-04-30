@@ -1,6 +1,7 @@
 import uuid
 
 import pytest, requests
+from src.main.api.common.role import Role
 
 
 @pytest.mark.api
@@ -13,7 +14,7 @@ class TestApiUpdateUserName:
             json={
                 "username": "TestUser24",
                 "password": "TestPass1!",
-                "role": "USER"
+                "role": Role.USER.value
             },
             headers={
                 "accept": "*/*",
@@ -83,7 +84,7 @@ class TestApiUpdateUserName:
             json={
                 "username": username,
                 "password": "TestPass1!",
-                "role": "USER"
+                "role": Role.USER.value
             },
             headers={
                 "accept": "*/*",

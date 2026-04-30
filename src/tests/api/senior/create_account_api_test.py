@@ -1,7 +1,9 @@
 import pytest
 
 from src.main.api.senior.DTO.account_dto import AccountDTO
+from src.main.api.senior.DTO.comparison.dto_assertions import DtoAssertions
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
+from src.main.api.common.role import Role
 from src.main.api.senior.classes.api_manager import ApiManager
 from src.main.api.senior.clients.skeleton.client.crud_client import CrudClient
 from src.main.api.senior.clients.skeleton.client.endpoint import Endpoint
@@ -20,7 +22,7 @@ class TestApiCreateAccount:
         # arrange: создаём пользователя через админский эндпоинт
         username = RandomData.generate_username()
         password = RandomData.generate_password()
-        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
+        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role=Role.USER)
 
         api_manager.admin_steps.create_user(create_user_request_dto)
 
@@ -56,6 +58,6 @@ class TestApiCreateAccount:
         else:
             raise AssertionError(f"Account {created_account.id} not found in response")
 
-        assert listed_account.accountNumber == created_account.accountNumber
-        assert listed_account.balance == 0.0
-        assert len(listed_account.transactions) == 0
+        # Сверяем, что аккаунт из списка полностью соответствует только что созданному
+        # (id, accountNumber, balance, transactions) — правило AccountDTO=AccountDTO:*
+        DtoAssertions(created_account, listed_account).match()

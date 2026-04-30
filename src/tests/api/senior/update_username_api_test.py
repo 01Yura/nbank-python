@@ -1,6 +1,7 @@
 import pytest
 
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
+from src.main.api.common.role import Role
 from src.main.api.senior.classes.api_manager import ApiManager
 from src.main.api.senior.generator.random_data import RandomData
 
@@ -15,7 +16,7 @@ class TestApiUpdateUserName:
         username = RandomData.generate_username()
         password = RandomData.generate_password()
         api_manager.admin_steps.create_user(
-            CreateUserRequestDTO(username=username, password=password, role="USER")
+            CreateUserRequestDTO(username=username, password=password, role=Role.USER)
         )
 
         # assert: изначально name должен быть None
@@ -46,7 +47,7 @@ class TestApiUpdateUserName:
 
         # arrange: создаём пользователя через админский эндпоинт
         api_manager.admin_steps.create_user(
-            CreateUserRequestDTO(username=username, password=password, role="USER")
+            CreateUserRequestDTO(username=username, password=password, role=Role.USER)
         )
 
         # assert: изначально name должен быть None

@@ -1,6 +1,7 @@
 import pytest
 
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
+from src.main.api.common.role import Role
 from src.main.api.senior.generator.random_data import RandomData
 from src.main.api.senior.classes.api_manager import ApiManager
 
@@ -14,7 +15,7 @@ class TestApiLoginUser:
         # arrange: создаём обычного пользователя через админский эндпоинт
         username = RandomData.generate_username()
         password = RandomData.generate_password()
-        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
+        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role=Role.USER)
         api_manager.admin_steps.create_user(create_user_request_dto)
         # cleanup не делаем вручную — созданный пользователь автоматически попадёт в created_objects и удалится фикстурой
 
@@ -42,7 +43,7 @@ class TestApiLoginUser:
         created_username = RandomData.generate_username()
         created_password = RandomData.generate_password()
         api_manager.admin_steps.create_user(
-            CreateUserRequestDTO(username=created_username, password=created_password, role="USER")
+            CreateUserRequestDTO(username=created_username, password=created_password, role=Role.USER)
         )
 
         login_username, login_password = f"{created_username}{username_suffix}", f"{created_password}{password_suffix}"

@@ -8,6 +8,7 @@ from src.main.api.middle.DTO.create_user_response_dto import CreateUserResponseD
 from src.main.api.middle.DTO.deposit_money_request_dto import DepositMoneyRequestDTO
 from src.main.api.middle.DTO.deposit_money_response_dto import DepositMoneyResponseDTO
 from src.main.api.middle.DTO.transfer_money_request_dto import TransferMoneyRequestDTO
+from src.main.api.common.role import Role
 from src.main.api.middle.client.accounts_client import AccountsClient
 from src.main.api.middle.client.admin_client import AdminClient
 from src.main.api.middle.client.customer_accounts_client import CustomerAccountsClient
@@ -44,7 +45,7 @@ class TestApiTransferMoney:
         password = RandomData.generate_password()
 
         # create user
-        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
+        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role=Role.USER)
         create_user_response = AdminClient(
             RequestSpec.admin_auth_spec(),
             ResponseSpec.response_returns_201_spec(),
@@ -135,7 +136,7 @@ class TestApiTransferMoney:
         password = RandomData.generate_password()
 
         # create user
-        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
+        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role=Role.USER)
         create_user_response = AdminClient(
             RequestSpec.admin_auth_spec(),
             ResponseSpec.response_returns_201_spec(),

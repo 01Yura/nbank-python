@@ -3,6 +3,7 @@ import pytest
 from src.main.api.senior.DTO.account_dto import AccountDTO
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.senior.DTO.transfer_money_request_dto import TransferMoneyRequestDTO
+from src.main.api.common.role import Role
 from src.main.api.senior.classes.api_manager import ApiManager
 from src.main.api.senior.clients.skeleton.client.crud_client import CrudClient
 from src.main.api.senior.clients.skeleton.client.endpoint import Endpoint
@@ -39,7 +40,7 @@ class TestApiTransferMoney:
         # arrange: создаём пользователя через админский эндпоинт
         username = RandomData.generate_username()
         password = RandomData.generate_password()
-        api_manager.admin_steps.create_user(CreateUserRequestDTO(username=username, password=password, role="USER"))
+        api_manager.admin_steps.create_user(CreateUserRequestDTO(username=username, password=password, role=Role.USER))
 
         # arrange: создаём 2 аккаунта под пользователем
         sender_account = ValidatedCrudClient(
@@ -125,7 +126,7 @@ class TestApiTransferMoney:
         # arrange: создаём пользователя через админский эндпоинт
         username = RandomData.generate_username()
         password = RandomData.generate_password()
-        api_manager.admin_steps.create_user(CreateUserRequestDTO(username=username, password=password, role="USER"))
+        api_manager.admin_steps.create_user(CreateUserRequestDTO(username=username, password=password, role=Role.USER))
 
         sender_account = ValidatedCrudClient(
             request_spec=RequestSpec.user_auth_spec(username=username, password=password),

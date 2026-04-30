@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from src.main.api.senior.DTO.comparison.dto_assertions import DtoAssertions
 from src.main.api.senior.DTO.customer_profile_response_dto import CustomerProfileResponseDTO
 from src.main.api.senior.DTO.deposit_money_request_dto import DepositMoneyRequestDTO
 from src.main.api.senior.DTO.deposit_money_response_dto import DepositMoneyResponseDTO
@@ -69,7 +70,9 @@ class UserSteps(BaseSteps):
 
         assert isinstance(update_profile_response_dto, UpdateProfileResponseDTO)
         assert update_profile_response_dto.message == "Profile updated successfully"
-        assert update_profile_response_dto.customer.name == new_name
+        # все ассерты касательно совпадения полей запроса/ответа прописаны прямо,
+        # поэтому в самом тесте они уже не нужны
+        DtoAssertions(update_profile_request_dto, update_profile_response_dto).match()
 
         return update_profile_response_dto
 
@@ -116,11 +119,15 @@ class UserSteps(BaseSteps):
             account_id: int,
             amount: float,
     ) -> DepositMoneyResponseDTO:
+        deposit_request_dto = DepositMoneyRequestDTO(id=account_id, balance=amount)
         deposit_response = ValidatedCrudClient(
             request_spec=RequestSpec.user_auth_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_200_spec(),
             endpoint=Endpoint.ACCOUNTS_DEPOSIT,
-        ).post(DepositMoneyRequestDTO(id=account_id, balance=amount))
+        ).post(deposit_request_dto)
 
         assert isinstance(deposit_response, DepositMoneyResponseDTO)
+        # сверяем, что ответ относится к тому же аккаунту, что и запрос (id);
+        # balance в ответе — кумулятивный, его сюда вшивать нельзя
+        DtoAssertions(deposit_request_dto, deposit_response).match()
         return deposit_response

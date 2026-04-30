@@ -1,4 +1,5 @@
 import pytest, requests
+from src.main.api.common.role import Role
 
 
 @pytest.mark.api
@@ -11,7 +12,7 @@ class TestApiLoginUser:
             json={
                 "username": "TestUser20",
                 "password": "TestPass1!",
-                "role": "USER"
+                "role": Role.USER.value
             },
             headers={
                 "accept": "*/*",
@@ -54,7 +55,7 @@ class TestApiLoginUser:
             json={
                 "username": created_username,
                 "password": created_password,
-                "role": "USER",
+                "role": Role.USER.value,
             },
             headers={
                 "accept": "*/*",
@@ -62,7 +63,7 @@ class TestApiLoginUser:
                 "Content-Type": "application/json",
             },
         )
-        assert create_user_response.status_code == 400
+        assert create_user_response.status_code == 201
 
         # attempt to login with invalid creds
         login_user_response = requests.post(

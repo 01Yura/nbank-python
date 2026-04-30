@@ -5,6 +5,7 @@ from src.main.api.middle.DTO.create_user_response_dto import CreateUserResponseD
 from src.main.api.middle.DTO.customer_profile_response_dto import CustomerProfileResponseDTO
 from src.main.api.middle.DTO.update_profile_request_dto import UpdateProfileRequestDTO
 from src.main.api.middle.DTO.update_profile_response_dto import UpdateProfileResponseDTO
+from src.main.api.common.role import Role
 from src.main.api.middle.client.admin_client import AdminClient
 from src.main.api.middle.client.customer_profile_client import CustomerProfileClient
 from src.main.api.middle.generator.random_data import RandomData
@@ -20,7 +21,7 @@ class TestApiUpdateUserName:
         password = RandomData.generate_password()
 
         # create user
-        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
+        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role=Role.USER)
         create_user_response = AdminClient(
             RequestSpec.admin_auth_spec(),
             ResponseSpec.response_returns_201_spec(),
@@ -66,7 +67,7 @@ class TestApiUpdateUserName:
         password = RandomData.generate_password()
 
         # create user
-        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
+        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role=Role.USER)
         create_user_response = AdminClient(
             RequestSpec.admin_auth_spec(),
             ResponseSpec.response_returns_201_spec(),

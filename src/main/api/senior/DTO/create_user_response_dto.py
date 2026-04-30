@@ -1,12 +1,13 @@
 from src.main.api.middle.DTO.base_dto import BaseDTO
 from src.main.api.middle.DTO.account_dto import AccountDTO
+from src.main.api.common.role import Role
 
 
 class CreateUserResponseDTO(BaseDTO):
     id: int
     username: str
     password: str
-    role: str
+    role: Role
     name: str | None
     accounts: list[AccountDTO]
 

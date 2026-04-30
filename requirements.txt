@@ -4,3 +4,4 @@ pydantic
 faker
 requests_toolbelt
 colorama
+rstr

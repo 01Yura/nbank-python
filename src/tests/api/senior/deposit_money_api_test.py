@@ -3,6 +3,7 @@ import pytest
 from src.main.api.senior.DTO.account_dto import AccountDTO
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.senior.DTO.deposit_money_request_dto import DepositMoneyRequestDTO
+from src.main.api.common.role import Role
 from src.main.api.senior.classes.api_manager import ApiManager
 from src.main.api.senior.clients.skeleton.client.crud_client import CrudClient
 from src.main.api.senior.clients.skeleton.client.endpoint import Endpoint
@@ -38,7 +39,7 @@ class TestApiDepositMoney:
         # arrange: создаём пользователя через админский эндпоинт
         username = RandomData.generate_username()
         password = RandomData.generate_password()
-        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
+        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role=Role.USER)
         api_manager.admin_steps.create_user(create_user_request_dto)
 
         # arrange: создаём аккаунт под пользователем
@@ -94,7 +95,7 @@ class TestApiDepositMoney:
         # arrange: создаём пользователя через админский эндпоинт
         username = RandomData.generate_username()
         password = RandomData.generate_password()
-        api_manager.admin_steps.create_user(CreateUserRequestDTO(username=username, password=password, role="USER"))
+        api_manager.admin_steps.create_user(CreateUserRequestDTO(username=username, password=password, role=Role.USER))
 
         # arrange: создаём аккаунт (начальный баланс 0)
         created_account = ValidatedCrudClient(

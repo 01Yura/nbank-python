@@ -1,4 +1,5 @@
 import pytest, requests
+from src.main.api.common.role import Role
 
 
 @pytest.mark.api
@@ -8,14 +9,14 @@ class TestApiCreateUser:
         argnames="username, password, role",
         argvalues=[
             # Username: boundary length 3
-            ("Qz8", "Aa1!aaaa", "USER"),
+            ("Qz8", "Aa1!aaaa", Role.USER.value),
 
             # Username: boundary length 15
-            ("TestUser15lengt", "Aa1!aaaa", "ADMIN"),
+            ("TestUser15lengt", "Aa1!aaaa", Role.ADMIN.value),
 
             # Username: equivalence class with allowed separators (._-)
-            ("pos_us-er.01", "GoodPass1@", "USER"),
-            ("jun-user.02", "GoodPass1#", "ADMIN"),
+            ("pos_us-er.01", "GoodPass1@", Role.USER.value),
+            ("jun-user.02", "GoodPass1#", Role.ADMIN.value),
         ]
     )
     def test_admin_can_create_user_with_valid_credentials(self, username, password, role):
@@ -44,29 +45,29 @@ class TestApiCreateUser:
         argnames="username, password, role, error_key, error_value",
         argvalues=[
             # Username field validation
-            ("", "TestUser2!", "USER", "username", "Username cannot be blank"),
-            ("Te", "TestUser3!", "USER", "username", "Username must be between 3 and 15 characters"),
-            ("TestUserUserUser", "TestUser4!", "USER", "username", "Username must be between 3 and 15 characters"),
-            ("TestUser5#", "TestUser5!", "USER", "username",
+            ("", "TestUser2!", Role.USER.value, "username", "Username cannot be blank"),
+            ("Te", "TestUser3!", Role.USER.value, "username", "Username must be between 3 and 15 characters"),
+            ("TestUserUserUser", "TestUser4!", Role.USER.value, "username", "Username must be between 3 and 15 characters"),
+            ("TestUser5#", "TestUser5!", Role.USER.value, "username",
              "Username must contain only letters, digits, dashes, underscores, and dots"),
 
             # Role field validation
             ("TestUser6", "TestUser16", "SUPERADMIN", "role", "Role must be either 'ADMIN' or 'USER'"),
 
             # Password field validation
-            ("TestUser7", "Seven7!", "USER", "password",
+            ("TestUser7", "Seven7!", Role.USER.value, "password",
              "Password must contain at least one digit, one lower case, one upper case, one special character, no spaces, and be at least 8 characters long"),
-            ("TestUser8", "NoSpecial1", "USER", "password",
+            ("TestUser8", "NoSpecial1", Role.USER.value, "password",
              "Password must contain at least one digit, one lower case, one upper case, one special character, no spaces, and be at least 8 characters long"),
-            ("TestUser9", "nouppercase1!", "USER", "password",
+            ("TestUser9", "nouppercase1!", Role.USER.value, "password",
              "Password must contain at least one digit, one lower case, one upper case, one special character, no spaces, and be at least 8 characters long"),
-            ("TestUser10", "NOLOWERCASE1!", "USER", "password",
+            ("TestUser10", "NOLOWERCASE1!", Role.USER.value, "password",
              "Password must contain at least one digit, one lower case, one upper case, one special character, no spaces, and be at least 8 characters long"),
-            ("TestUser11", "NoNumber!", "USER", "password",
+            ("TestUser11", "NoNumber!", Role.USER.value, "password",
              "Password must contain at least one digit, one lower case, one upper case, one special character, no spaces, and be at least 8 characters long"),
-            ("TestUser12", "With spaces1!", "USER", "password",
+            ("TestUser12", "With spaces1!", Role.USER.value, "password",
              "Password must contain at least one digit, one lower case, one upper case, one special character, no spaces, and be at least 8 characters long"),
-            ("TestUser13", "", "USER", "password", "Password cannot be blank"),
+            ("TestUser13", "", Role.USER.value, "password", "Password cannot be blank"),
         ]
     )
     def test_admin_cannot_create_user_with_invalid_credentials(self, username, password, role, error_key, error_value):
@@ -95,7 +96,7 @@ class TestApiCreateUser:
             json={
                 "username": "TestDupUsr02",
                 "password": "TestUser1!",
-                "role": "USER"
+                "role": Role.USER.value
             },
             headers={
                 "accept": "*/*",
@@ -110,7 +111,7 @@ class TestApiCreateUser:
             json={
                 "username": "TestDupUsr02",
                 "password": "TestUser1!",
-                "role": "USER"
+                "role": Role.USER.value
             },
             headers={
                 "accept": "*/*",

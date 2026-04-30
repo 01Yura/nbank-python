@@ -1,5 +1,6 @@
 from decimal import Decimal, ROUND_HALF_UP
 import pytest, requests
+from src.main.api.common.role import Role
 
 # Q - это константа, которая используется для округления чисел до 2 знаков после запятой
 Q = Decimal("0.01")
@@ -34,7 +35,7 @@ class TestApiTransferMoney:
         # create a new user
         create_user_response = requests.post(
             url="http://localhost:4111/api/v1/admin/users",
-            json={"username": username, "password": "TestPass1!", "role": "USER"},
+            json={"username": username, "password": "TestPass1!", "role": Role.USER.value},
             headers={
                 "accept": "*/*",
                 "Authorization": "Basic YWRtaW46YWRtaW4=",
@@ -147,7 +148,7 @@ class TestApiTransferMoney:
         # create user
         create_user_response = requests.post(
             url="http://localhost:4111/api/v1/admin/users",
-            json={"username": username, "password": "TestPass1!", "role": "USER"},
+            json={"username": username, "password": "TestPass1!", "role": Role.USER.value},
             headers={
                 "accept": "*/*",
                 "Authorization": "Basic YWRtaW46YWRtaW4=",

@@ -1,5 +1,6 @@
 import pytest
 import requests
+from src.main.api.common.role import Role
 
 @pytest.mark.api
 class TestApiCreateAccount:
@@ -11,7 +12,7 @@ class TestApiCreateAccount:
             json={
                 "username": "TestUser23",
                 "password": "TestPass1!",
-                "role": "USER"
+                "role": Role.USER.value
             },
             headers={
                 "accept": "*/*",
