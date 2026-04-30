@@ -8,7 +8,7 @@ from src.main.api.senior.classes.api_manager import ApiManager
 from src.main.api.senior.clients.skeleton.client.crud_client import CrudClient
 from src.main.api.senior.clients.skeleton.client.endpoint import Endpoint
 from src.main.api.senior.clients.skeleton.client.validated_crud_client import ValidatedCrudClient
-from src.main.api.senior.generator.random_data import RandomData
+from src.main.api.senior.generator.random_dto_generator import RandomDtoGenerator
 from src.main.api.senior.specs.request_spec import RequestSpec
 from src.main.api.senior.specs.response_spec import ResponseSpec
 
@@ -20,9 +20,9 @@ class TestApiCreateAccount:
     @pytest.mark.usefixtures("api_manager")
     def test_user_can_create_account(self, api_manager: ApiManager):
         # arrange: создаём пользователя через админский эндпоинт
-        username = RandomData.generate_username()
-        password = RandomData.generate_password()
-        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role=Role.USER)
+        create_user_request_dto = RandomDtoGenerator.generate(CreateUserRequestDTO)
+        username = create_user_request_dto.username
+        password = create_user_request_dto.password
 
         api_manager.admin_steps.create_user(create_user_request_dto)
 

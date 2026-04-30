@@ -2,7 +2,7 @@ import pytest
 
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.common.role import Role
-from src.main.api.senior.generator.random_data import RandomData
+from src.main.api.senior.generator.random_dto_generator import RandomDtoGenerator
 from src.main.api.senior.classes.api_manager import ApiManager
 
 
@@ -13,9 +13,9 @@ class TestApiLoginUser:
     @pytest.mark.usefixtures("api_manager")
     def test_regular_user_can_login_with_valid_credentials(self, api_manager: ApiManager):
         # arrange: создаём обычного пользователя через админский эндпоинт
-        username = RandomData.generate_username()
-        password = RandomData.generate_password()
-        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role=Role.USER)
+        create_user_request_dto = RandomDtoGenerator.generate(CreateUserRequestDTO)
+        username = create_user_request_dto.username
+        password = create_user_request_dto.password
         api_manager.admin_steps.create_user(create_user_request_dto)
         # cleanup не делаем вручную — созданный пользователь автоматически попадёт в created_objects и удалится фикстурой
 
@@ -40,11 +40,10 @@ class TestApiLoginUser:
         password_suffix: str,
     ):
         # arrange: сначала создаём пользователя с корректными кредами
-        created_username = RandomData.generate_username()
-        created_password = RandomData.generate_password()
-        api_manager.admin_steps.create_user(
-            CreateUserRequestDTO(username=created_username, password=created_password, role=Role.USER)
-        )
+        create_user_request_dto = RandomDtoGenerator.generate(CreateUserRequestDTO)
+        created_username = create_user_request_dto.username
+        created_password = create_user_request_dto.password
+        api_manager.admin_steps.create_user(create_user_request_dto)
 
         login_username, login_password = f"{created_username}{username_suffix}", f"{created_password}{password_suffix}"
 
