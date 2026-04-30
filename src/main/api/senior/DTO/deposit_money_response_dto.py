@@ -1,5 +1,5 @@
-from src.main.api.middle.DTO.base_dto import BaseDTO
-from src.main.api.middle.DTO.transaction_dto import TransactionDTO
+from src.main.api.senior.DTO.base_dto import BaseDTO
+from src.main.api.senior.DTO.transaction_dto import TransactionDTO
 
 
 class DepositMoneyResponseDTO(BaseDTO):

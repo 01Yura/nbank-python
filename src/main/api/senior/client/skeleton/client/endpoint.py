@@ -9,6 +9,7 @@ from src.main.api.senior.DTO.create_user_response_dto import CreateUserResponseD
 from src.main.api.senior.DTO.deposit_money_request_dto import DepositMoneyRequestDTO
 from src.main.api.senior.DTO.deposit_money_response_dto import DepositMoneyResponseDTO
 from src.main.api.senior.DTO.login_user_request_dto import LoginUserRequestDTO
+from src.main.api.senior.DTO.transfer_money_request_dto import TransferMoneyRequestDTO
 from src.main.api.senior.DTO.update_profile_request_dto import UpdateProfileRequestDTO
 from src.main.api.senior.DTO.update_profile_response_dto import UpdateProfileResponseDTO
 
@@ -53,6 +54,13 @@ class Endpoint(Enum):
         url="/accounts/deposit",
         request_dto=DepositMoneyRequestDTO,
         response_dto=DepositMoneyResponseDTO,
+    )
+
+    ACCOUNTS_TRANSFER = EndpointConfig(
+        url="/accounts/transfer",
+        request_dto=TransferMoneyRequestDTO,
+        # эндпоинт возвращает только status/text (в тестах достаточно проверок по response_spec)
+        response_dto=None,
     )
 
     CUSTOMER_ACCOUNTS_GET = EndpointConfig(

@@ -1,5 +1,3 @@
-from decimal import Decimal, ROUND_HALF_UP
-
 import pytest
 
 from src.main.api.senior.DTO.account_dto import AccountDTO
@@ -12,12 +10,7 @@ from src.main.api.senior.client.skeleton.client.validated_crud_client import Val
 from src.main.api.senior.generator.random_data import RandomData
 from src.main.api.senior.specs.request_spec import RequestSpec
 from src.main.api.senior.specs.response_spec import ResponseSpec
-
-
-def as_decimal(x) -> Decimal:
-    # x это number, причем с плавающей точкой, из response.json()
-    # мы преобразуем его в Decimal, округляем до 2 знаков после запятой и возвращаем
-    return Decimal(str(x)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+from src.main.api.senior.utils.money import as_decimal
 
 
 @pytest.mark.api
