@@ -1,8 +1,7 @@
 import pytest
 
-from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.common.role import Role
-from src.main.api.senior.generator.random_dto_generator import RandomDtoGenerator
+from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.senior.classes.api_manager import ApiManager
 
 
@@ -64,18 +63,18 @@ class TestApiCreateUser:
     @pytest.mark.usefixtures("api_manager")
     def test_admin_cannot_create_user_with_invalid_credentials(self, api_manager: ApiManager, username, password, role,
                                                                error_key, error_value):
-        # стартуем с валидного DTO и точечно подменяем поле,
-        # чтобы ошибка была именно по проверяемому параметру
-        create_user_request_dto = RandomDtoGenerator.generate(CreateUserRequestDTO)
-        create_user_request_dto.username = username
-        create_user_request_dto.password = password
-        create_user_request_dto.role = role.value if isinstance(role, Role) else role
+        create_user_request_dto = CreateUserRequestDTO(
+            username=username,
+            password=password,
+            role=role.value if isinstance(role, Role) else role
+        )
         api_manager.admin_steps.create_invalid_user(create_user_request_dto, error_key, error_value)
 
     # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
-    @pytest.mark.usefixtures("api_manager")
-    def test_admin_cannot_create_user_that_already_exists(self, api_manager: ApiManager):
-        # create a user and check that the user was created
-        create_user_request_dto = RandomDtoGenerator.generate(CreateUserRequestDTO)
-        api_manager.admin_steps.create_user(create_user_request_dto)
-        api_manager.admin_steps.create_already_existing_user(create_user_request_dto)
+    @pytest.mark.usefixtures("api_manager", "user_creation")
+    def test_admin_cannot_create_user_that_already_exists(
+            self,
+            api_manager: ApiManager,
+            user_creation: CreateUserRequestDTO,
+    ):
+        api_manager.admin_steps.create_already_existing_user(user_creation)

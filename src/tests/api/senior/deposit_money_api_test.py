@@ -3,12 +3,10 @@ import pytest
 from src.main.api.senior.DTO.account_dto import AccountDTO
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.senior.DTO.deposit_money_request_dto import DepositMoneyRequestDTO
-from src.main.api.common.role import Role
 from src.main.api.senior.classes.api_manager import ApiManager
 from src.main.api.senior.clients.skeleton.client.crud_client import CrudClient
 from src.main.api.senior.clients.skeleton.client.endpoint import Endpoint
 from src.main.api.senior.clients.skeleton.client.validated_crud_client import ValidatedCrudClient
-from src.main.api.senior.generator.random_dto_generator import RandomDtoGenerator
 from src.main.api.senior.specs.request_spec import RequestSpec
 from src.main.api.senior.specs.response_spec import ResponseSpec
 from src.main.api.senior.utils.money import as_decimal
@@ -29,22 +27,20 @@ class TestApiDepositMoney:
         ],
     )
     # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
-    @pytest.mark.usefixtures("api_manager")
+    @pytest.mark.usefixtures("api_manager", "user_creation")
     def test_user_can_deposit_valid_amount_of_money(
             self,
             api_manager: ApiManager,
+            user_creation: CreateUserRequestDTO,
             deposit_balance: float,
             expected_balance: float,
     ):
-        # arrange: создаём пользователя через админский эндпоинт
-        create_user_request_dto = RandomDtoGenerator.generate(CreateUserRequestDTO)
-        username = create_user_request_dto.username
-        password = create_user_request_dto.password
-        api_manager.admin_steps.create_user(create_user_request_dto)
+        username = user_creation.username
+        password = user_creation.password
 
         # arrange: создаём аккаунт под пользователем
         created_account_dto = ValidatedCrudClient(
-            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_201_spec(),
             endpoint=Endpoint.ACCOUNTS_CREATE,
         ).post(None)
@@ -52,14 +48,14 @@ class TestApiDepositMoney:
 
         # act: пополняем счёт
         ValidatedCrudClient(
-            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_200_spec(),
             endpoint=Endpoint.ACCOUNTS_DEPOSIT,
         ).post(DepositMoneyRequestDTO(id=created_account_dto.id, balance=deposit_balance))
 
         # assert: проверяем баланс через /customer/accounts
         get_accounts_response = CrudClient(
-            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_200_spec(),
             endpoint=Endpoint.CUSTOMER_ACCOUNTS_GET,
         ).get()
@@ -85,22 +81,20 @@ class TestApiDepositMoney:
         ],
     )
     # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
-    @pytest.mark.usefixtures("api_manager")
+    @pytest.mark.usefixtures("api_manager", "user_creation")
     def test_user_cannot_deposit_money(
             self,
             api_manager: ApiManager,
+            user_creation: CreateUserRequestDTO,
             invalid_deposit_amount: float,
             expected_error_message: str,
     ):
-        # arrange: создаём пользователя через админский эндпоинт
-        create_user_request_dto = RandomDtoGenerator.generate(CreateUserRequestDTO)
-        username = create_user_request_dto.username
-        password = create_user_request_dto.password
-        api_manager.admin_steps.create_user(create_user_request_dto)
+        username = user_creation.username
+        password = user_creation.password
 
         # arrange: создаём аккаунт (начальный баланс 0)
         created_account = ValidatedCrudClient(
-            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_201_spec(),
             endpoint=Endpoint.ACCOUNTS_CREATE,
         ).post(None)
@@ -108,14 +102,14 @@ class TestApiDepositMoney:
 
         # act + assert: депозит с невалидной суммой — ожидаем 400 + текст ошибки
         CrudClient(
-            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_400_spec_with_text(expected_error_message),
             endpoint=Endpoint.ACCOUNTS_DEPOSIT,
         ).post(DepositMoneyRequestDTO(id=created_account.id, balance=invalid_deposit_amount))
 
         # assert: баланс должен остаться 0
         get_accounts_response = CrudClient(
-            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_200_spec(),
             endpoint=Endpoint.CUSTOMER_ACCOUNTS_GET,
         ).get()

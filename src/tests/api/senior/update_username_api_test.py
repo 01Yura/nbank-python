@@ -1,22 +1,21 @@
 import pytest
 
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
-from src.main.api.common.role import Role
 from src.main.api.senior.classes.api_manager import ApiManager
-from src.main.api.senior.generator.random_dto_generator import RandomDtoGenerator
 
 
 @pytest.mark.api
 class TestApiUpdateUserName:
 
     # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
-    @pytest.mark.usefixtures("api_manager")
-    def test_user_can_update_their_name_using_valid_name(self, api_manager: ApiManager):
-        # arrange: создаём пользователя через админский эндпоинт
-        create_user_request_dto = RandomDtoGenerator.generate(CreateUserRequestDTO)
-        username = create_user_request_dto.username
-        password = create_user_request_dto.password
-        api_manager.admin_steps.create_user(create_user_request_dto)
+    @pytest.mark.usefixtures("api_manager", "user_creation")
+    def test_user_can_update_their_name_using_valid_name(
+        self,
+        api_manager: ApiManager,
+        user_creation: CreateUserRequestDTO,
+    ):
+        username = user_creation.username
+        password = user_creation.password
 
         # assert: изначально name должен быть None
         profile = api_manager.user_steps.get_customer_profile(username=username, password=password)
@@ -39,13 +38,15 @@ class TestApiUpdateUserName:
         ],
     )
     # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
-    @pytest.mark.usefixtures("api_manager")
-    def test_user_cannot_update_their_name_using_invalid_name(self, api_manager: ApiManager, invalid_name: str):
-        # arrange: создаём пользователя через админский эндпоинт
-        create_user_request_dto = RandomDtoGenerator.generate(CreateUserRequestDTO)
-        username = create_user_request_dto.username
-        password = create_user_request_dto.password
-        api_manager.admin_steps.create_user(create_user_request_dto)
+    @pytest.mark.usefixtures("api_manager", "user_creation")
+    def test_user_cannot_update_their_name_using_invalid_name(
+        self,
+        api_manager: ApiManager,
+        user_creation: CreateUserRequestDTO,
+        invalid_name: str,
+    ):
+        username = user_creation.username
+        password = user_creation.password
 
         # assert: изначально name должен быть None
         profile = api_manager.user_steps.get_customer_profile(username=username, password=password)

@@ -3,12 +3,10 @@ import pytest
 from src.main.api.senior.DTO.account_dto import AccountDTO
 from src.main.api.senior.DTO.comparison.dto_assertions import DtoAssertions
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
-from src.main.api.common.role import Role
 from src.main.api.senior.classes.api_manager import ApiManager
 from src.main.api.senior.clients.skeleton.client.crud_client import CrudClient
 from src.main.api.senior.clients.skeleton.client.endpoint import Endpoint
 from src.main.api.senior.clients.skeleton.client.validated_crud_client import ValidatedCrudClient
-from src.main.api.senior.generator.random_dto_generator import RandomDtoGenerator
 from src.main.api.senior.specs.request_spec import RequestSpec
 from src.main.api.senior.specs.response_spec import ResponseSpec
 
@@ -17,18 +15,14 @@ from src.main.api.senior.specs.response_spec import ResponseSpec
 class TestApiCreateAccount:
 
     # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
-    @pytest.mark.usefixtures("api_manager")
-    def test_user_can_create_account(self, api_manager: ApiManager):
-        # arrange: создаём пользователя через админский эндпоинт
-        create_user_request_dto = RandomDtoGenerator.generate(CreateUserRequestDTO)
-        username = create_user_request_dto.username
-        password = create_user_request_dto.password
-
-        api_manager.admin_steps.create_user(create_user_request_dto)
+    @pytest.mark.usefixtures("api_manager", "user_creation")
+    def test_user_can_create_account(self, api_manager: ApiManager, user_creation: CreateUserRequestDTO):
+        username = user_creation.username
+        password = user_creation.password
 
         # act: создаём аккаунт под пользователем
         created_account = ValidatedCrudClient(
-            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_201_spec(),
             endpoint=Endpoint.ACCOUNTS_CREATE,
         ).post(None)
@@ -41,7 +35,7 @@ class TestApiCreateAccount:
 
         # assert: проверяем, что аккаунт появился в /customer/accounts
         get_accounts_response = CrudClient(
-            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_200_spec(),
             endpoint=Endpoint.CUSTOMER_ACCOUNTS_GET,
         ).get()

@@ -52,7 +52,7 @@ class UserSteps(BaseSteps):
 
     def get_customer_profile(self, username: str, password: str) -> CustomerProfileResponseDTO:
         customer_profile_response_dto = ValidatedCrudClient(
-            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_200_spec(),
             endpoint=Endpoint.CUSTOMER_PROFILE_GET,
         ).get()
@@ -63,7 +63,7 @@ class UserSteps(BaseSteps):
     def update_customer_profile_name(self, username: str, password: str, new_name: str) -> UpdateProfileResponseDTO:
         update_profile_request_dto = UpdateProfileRequestDTO(name=new_name)
         update_profile_response_dto = ValidatedCrudClient(
-            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_200_spec(),
             endpoint=Endpoint.CUSTOMER_PROFILE_UPDATE,
         ).put(update_profile_request_dto)
@@ -79,7 +79,7 @@ class UserSteps(BaseSteps):
     def update_customer_profile_name_invalid(self, username: str, password: str, invalid_name: str) -> None:
         update_profile_request_dto = UpdateProfileRequestDTO(name=invalid_name)
         CrudClient(
-            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_400_simple_spec(),
             endpoint=Endpoint.CUSTOMER_PROFILE_UPDATE,
         ).put(update_profile_request_dto)
@@ -121,7 +121,7 @@ class UserSteps(BaseSteps):
     ) -> DepositMoneyResponseDTO:
         deposit_request_dto = DepositMoneyRequestDTO(id=account_id, balance=amount)
         deposit_response = ValidatedCrudClient(
-            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_200_spec(),
             endpoint=Endpoint.ACCOUNTS_DEPOSIT,
         ).post(deposit_request_dto)

@@ -3,12 +3,10 @@ import pytest
 from src.main.api.senior.DTO.account_dto import AccountDTO
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.senior.DTO.transfer_money_request_dto import TransferMoneyRequestDTO
-from src.main.api.common.role import Role
 from src.main.api.senior.classes.api_manager import ApiManager
 from src.main.api.senior.clients.skeleton.client.crud_client import CrudClient
 from src.main.api.senior.clients.skeleton.client.endpoint import Endpoint
 from src.main.api.senior.clients.skeleton.client.validated_crud_client import ValidatedCrudClient
-from src.main.api.senior.generator.random_dto_generator import RandomDtoGenerator
 from src.main.api.senior.specs.request_spec import RequestSpec
 from src.main.api.senior.specs.response_spec import ResponseSpec
 from src.main.api.senior.utils.money import as_decimal
@@ -28,31 +26,29 @@ class TestApiTransferMoney:
             (9999.99, 5000, 10000, 9999.99),
         ],
     )
-    @pytest.mark.usefixtures("api_manager")
+    @pytest.mark.usefixtures("api_manager", "user_creation")
     def test_user_can_transfer_money(
             self,
             api_manager: ApiManager,
+            user_creation: CreateUserRequestDTO,
             transfer_amount: float,
             deposit_per_cycle: float,
             deposit_threshold: float,
             expected_receiver_balance: float,
     ):
-        # arrange: создаём пользователя через админский эндпоинт
-        create_user_request_dto = RandomDtoGenerator.generate(CreateUserRequestDTO)
-        username = create_user_request_dto.username
-        password = create_user_request_dto.password
-        api_manager.admin_steps.create_user(create_user_request_dto)
+        username = user_creation.username
+        password = user_creation.password
 
         # arrange: создаём 2 аккаунта под пользователем
         sender_account = ValidatedCrudClient(
-            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_201_spec(),
             endpoint=Endpoint.ACCOUNTS_CREATE,
         ).post(None)
         assert isinstance(sender_account, AccountDTO)
 
         receiver_account = ValidatedCrudClient(
-            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_201_spec(),
             endpoint=Endpoint.ACCOUNTS_CREATE,
         ).post(None)
@@ -69,7 +65,7 @@ class TestApiTransferMoney:
 
         # act: переводим деньги
         CrudClient(
-            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_200_spec(),
             endpoint=Endpoint.ACCOUNTS_TRANSFER,
         ).post(
@@ -82,7 +78,7 @@ class TestApiTransferMoney:
 
         # assert: проверяем балансы через /customer/accounts
         get_accounts_response = CrudClient(
-            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_200_spec(),
             endpoint=Endpoint.CUSTOMER_ACCOUNTS_GET,
         ).get()
@@ -114,31 +110,29 @@ class TestApiTransferMoney:
             (10000.01, 5000, 11000, 0.0, "Transfer amount cannot exceed 10000"),
         ],
     )
-    @pytest.mark.usefixtures("api_manager")
+    @pytest.mark.usefixtures("api_manager", "user_creation")
     def test_user_cannot_transfer_money(
             self,
             api_manager: ApiManager,
+            user_creation: CreateUserRequestDTO,
             transfer_amount: float,
             deposit_per_cycle: float,
             deposit_threshold: float,
             expected_receiver_balance: float,
             error_substring: str,
     ):
-        # arrange: создаём пользователя через админский эндпоинт
-        create_user_request_dto = RandomDtoGenerator.generate(CreateUserRequestDTO)
-        username = create_user_request_dto.username
-        password = create_user_request_dto.password
-        api_manager.admin_steps.create_user(create_user_request_dto)
+        username = user_creation.username
+        password = user_creation.password
 
         sender_account = ValidatedCrudClient(
-            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_201_spec(),
             endpoint=Endpoint.ACCOUNTS_CREATE,
         ).post(None)
         assert isinstance(sender_account, AccountDTO)
 
         receiver_account = ValidatedCrudClient(
-            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_201_spec(),
             endpoint=Endpoint.ACCOUNTS_CREATE,
         ).post(None)
@@ -155,7 +149,7 @@ class TestApiTransferMoney:
 
         # act + assert: перевод должен упасть с 400 и текстом ошибки
         CrudClient(
-            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_400_spec_with_text(error_substring),
             endpoint=Endpoint.ACCOUNTS_TRANSFER,
         ).post(
@@ -168,7 +162,7 @@ class TestApiTransferMoney:
 
         # verify balances unchanged after failed transfer
         get_accounts_response = CrudClient(
-            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
             response_spec=ResponseSpec.response_returns_200_spec(),
             endpoint=Endpoint.CUSTOMER_ACCOUNTS_GET,
         ).get()
