@@ -2,17 +2,16 @@ from decimal import Decimal, ROUND_HALF_UP
 
 import pytest
 
-from src.main.api.middle.DTO.account_dto import AccountDTO
-from src.main.api.middle.DTO.create_user_request_dto import CreateUserRequestDTO
-from src.main.api.middle.DTO.create_user_response_dto import CreateUserResponseDTO
-from src.main.api.middle.DTO.deposit_money_request_dto import DepositMoneyRequestDTO
-from src.main.api.middle.client.accounts_client import AccountsClient
-from src.main.api.middle.client.admin_client import AdminClient
-from src.main.api.middle.client.customer_accounts_client import CustomerAccountsClient
-from src.main.api.middle.client.deposit_money_client import DepositMoneyClient
-from src.main.api.middle.generator.random_data import RandomData
-from src.main.api.middle.specs.request_spec import RequestSpec
-from src.main.api.middle.specs.response_spec import ResponseSpec
+from src.main.api.senior.DTO.account_dto import AccountDTO
+from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
+from src.main.api.senior.DTO.deposit_money_request_dto import DepositMoneyRequestDTO
+from src.main.api.senior.classes.api_manager import ApiManager
+from src.main.api.senior.client.skeleton.client.crud_client import CrudClient
+from src.main.api.senior.client.skeleton.client.endpoint import Endpoint
+from src.main.api.senior.client.skeleton.client.validated_crud_client import ValidatedCrudClient
+from src.main.api.senior.generator.random_data import RandomData
+from src.main.api.senior.specs.request_spec import RequestSpec
+from src.main.api.senior.specs.response_spec import ResponseSpec
 
 
 def as_decimal(x) -> Decimal:
@@ -35,50 +34,50 @@ class TestApiDepositMoney:
             (5000.00, 5000.00),
         ],
     )
-    def test_user_can_deposit_valid_amount_of_money(self, deposit_balance, expected_balance):
+    # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
+    @pytest.mark.usefixtures("api_manager")
+    def test_user_can_deposit_valid_amount_of_money(
+        self,
+        api_manager: ApiManager,
+        deposit_balance: float,
+        expected_balance: float,
+    ):
+        # arrange: создаём пользователя через админский эндпоинт
         username = RandomData.generate_username()
         password = RandomData.generate_password()
-
-        # create user
         create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
-        create_user_response = AdminClient(
-            RequestSpec.admin_auth_spec(),
-            ResponseSpec.response_returns_201_spec(),
-        ).post(create_user_request_dto)
-        create_user_response_dto = CreateUserResponseDTO(**create_user_response.json())
+        api_manager.admin_steps.create_user(create_user_request_dto)
 
-        # create account
-        create_account_response = AccountsClient(
-            RequestSpec.user_auth_spec(username=username, password=password),
-            ResponseSpec.response_returns_201_spec(),
+        # arrange: создаём аккаунт под пользователем
+        created_account_dto = ValidatedCrudClient(
+            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            response_spec=ResponseSpec.response_returns_201_spec(),
+            endpoint=Endpoint.ACCOUNTS_CREATE,
         ).post(None)
-        created_account = AccountDTO(**create_account_response.json())
+        assert isinstance(created_account_dto, AccountDTO)
 
-        # deposit money
-        DepositMoneyClient(
-            RequestSpec.user_auth_spec(username=username, password=password),
-            ResponseSpec.response_returns_200_spec(),
-        ).post(DepositMoneyRequestDTO(id=created_account.id, balance=deposit_balance))
+        # act: пополняем счёт
+        ValidatedCrudClient(
+            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            response_spec=ResponseSpec.response_returns_200_spec(),
+            endpoint=Endpoint.ACCOUNTS_DEPOSIT,
+        ).post(DepositMoneyRequestDTO(id=created_account_dto.id, balance=deposit_balance))
 
-        # check that the account balance matches
-        get_accounts_response = CustomerAccountsClient(
-            RequestSpec.user_auth_spec(username=username, password=password),
-            ResponseSpec.response_returns_200_spec(),
+        # assert: проверяем баланс через /customer/accounts
+        get_accounts_response = CrudClient(
+            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            response_spec=ResponseSpec.response_returns_200_spec(),
+            endpoint=Endpoint.CUSTOMER_ACCOUNTS_GET,
         ).get()
 
-        accounts = [AccountDTO(**a) for a in get_accounts_response.json()]
-        for account in accounts:
-            if account.id == created_account.id:
-                assert as_decimal(account.balance) == as_decimal(expected_balance)
+        accounts = [AccountDTO.model_validate(a) for a in get_accounts_response.json()]
+        for listed_account in accounts:
+            if listed_account.id == created_account_dto.id:
                 break
         else:
-            raise AssertionError(f"Account {created_account.id} not found in response")
+            raise AssertionError(f"Account {created_account_dto.id} not found in response")
 
-        # cleanup created user
-        AdminClient(
-            RequestSpec.admin_auth_spec(),
-            ResponseSpec.response_returns_200_deleted_spec(create_user_response_dto.id),
-        ).delete(create_user_response_dto.id)
+        assert as_decimal(listed_account.balance) == as_decimal(expected_balance)
 
     @pytest.mark.parametrize(
         argnames="invalid_deposit_amount, expected_error_message",
@@ -91,46 +90,45 @@ class TestApiDepositMoney:
             (5000.01, "Deposit amount cannot exceed 5000"),
         ],
     )
-    def test_user_cannot_deposit_money(self, invalid_deposit_amount, expected_error_message):
+    # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
+    @pytest.mark.usefixtures("api_manager")
+    def test_user_cannot_deposit_money(
+        self,
+        api_manager: ApiManager,
+        invalid_deposit_amount: float,
+        expected_error_message: str,
+    ):
+        # arrange: создаём пользователя через админский эндпоинт
         username = RandomData.generate_username()
         password = RandomData.generate_password()
+        api_manager.admin_steps.create_user(CreateUserRequestDTO(username=username, password=password, role="USER"))
 
-        # create user
-        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
-        create_user_response = AdminClient(
-            RequestSpec.admin_auth_spec(),
-            ResponseSpec.response_returns_201_spec(),
-        ).post(create_user_request_dto)
-        create_user_response_dto = CreateUserResponseDTO(**create_user_response.json())
-
-        # create an account (initial balance 0)
-        create_account_response = AccountsClient(
-            RequestSpec.user_auth_spec(username=username, password=password),
-            ResponseSpec.response_returns_201_spec(),
+        # arrange: создаём аккаунт (начальный баланс 0)
+        created_account = ValidatedCrudClient(
+            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            response_spec=ResponseSpec.response_returns_201_spec(),
+            endpoint=Endpoint.ACCOUNTS_CREATE,
         ).post(None)
-        created_account = AccountDTO(**create_account_response.json())
+        assert isinstance(created_account, AccountDTO)
 
-        # deposit with invalid amount — should be rejected
-        DepositMoneyClient(
-            RequestSpec.user_auth_spec(username=username, password=password),
-            ResponseSpec.response_returns_400_spec_with_text(expected_error_message),
+        # act + assert: депозит с невалидной суммой — ожидаем 400 + текст ошибки
+        CrudClient(
+            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            response_spec=ResponseSpec.response_returns_400_spec_with_text(expected_error_message),
+            endpoint=Endpoint.ACCOUNTS_DEPOSIT,
         ).post(DepositMoneyRequestDTO(id=created_account.id, balance=invalid_deposit_amount))
 
-        # balance must still be 0
-        get_accounts_response = CustomerAccountsClient(
-            RequestSpec.user_auth_spec(username=username, password=password),
-            ResponseSpec.response_returns_200_spec(),
+        # assert: баланс должен остаться 0
+        get_accounts_response = CrudClient(
+            request_spec=RequestSpec.user_auth_spec(username=username, password=password),
+            response_spec=ResponseSpec.response_returns_200_spec(),
+            endpoint=Endpoint.CUSTOMER_ACCOUNTS_GET,
         ).get()
-        accounts = [AccountDTO(**a) for a in get_accounts_response.json()]
-        for account in accounts:
-            if account.id == created_account.id:
-                assert as_decimal(account.balance) == as_decimal(0)
+        accounts = [AccountDTO.model_validate(a) for a in get_accounts_response.json()]
+        for listed_account in accounts:
+            if listed_account.id == created_account.id:
                 break
         else:
             raise AssertionError(f"Account {created_account.id} not found in response")
 
-        # cleanup created user
-        AdminClient(
-            RequestSpec.admin_auth_spec(),
-            ResponseSpec.response_returns_200_deleted_spec(create_user_response_dto.id),
-        ).delete(create_user_response_dto.id)
+        assert as_decimal(listed_account.balance) == as_decimal(0)

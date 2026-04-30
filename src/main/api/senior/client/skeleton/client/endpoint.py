@@ -6,6 +6,8 @@ from src.main.api.senior.DTO.account_dto import AccountDTO
 from src.main.api.senior.DTO.customer_profile_response_dto import CustomerProfileResponseDTO
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.senior.DTO.create_user_response_dto import CreateUserResponseDTO
+from src.main.api.senior.DTO.deposit_money_request_dto import DepositMoneyRequestDTO
+from src.main.api.senior.DTO.deposit_money_response_dto import DepositMoneyResponseDTO
 from src.main.api.senior.DTO.login_user_request_dto import LoginUserRequestDTO
 from src.main.api.senior.DTO.update_profile_request_dto import UpdateProfileRequestDTO
 from src.main.api.senior.DTO.update_profile_response_dto import UpdateProfileResponseDTO
@@ -45,6 +47,12 @@ class Endpoint(Enum):
         url="/accounts",
         request_dto=None,
         response_dto=AccountDTO,
+    )
+
+    ACCOUNTS_DEPOSIT = EndpointConfig(
+        url="/accounts/deposit",
+        request_dto=DepositMoneyRequestDTO,
+        response_dto=DepositMoneyResponseDTO,
     )
 
     CUSTOMER_ACCOUNTS_GET = EndpointConfig(
