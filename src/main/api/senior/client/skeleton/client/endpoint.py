@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from src.main.api.senior.DTO.base_dto import BaseDTO
+from src.main.api.senior.DTO.account_dto import AccountDTO
 from src.main.api.senior.DTO.customer_profile_response_dto import CustomerProfileResponseDTO
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.senior.DTO.create_user_response_dto import CreateUserResponseDTO
@@ -38,6 +39,19 @@ class Endpoint(Enum):
         # запрос валидируем DTO, а ответ не валидируем, т.к. токен приходит в headers, а не JSON-body
         request_dto=LoginUserRequestDTO,
         response_dto=None
+    )
+
+    ACCOUNTS_CREATE = EndpointConfig(
+        url="/accounts",
+        request_dto=None,
+        response_dto=AccountDTO,
+    )
+
+    CUSTOMER_ACCOUNTS_GET = EndpointConfig(
+        url="/customer/accounts",
+        request_dto=None,
+        # эндпоинт возвращает список аккаунтов, поэтому тут не валидируем ответ через один DTO
+        response_dto=None,
     )
 
     CUSTOMER_PROFILE_GET = EndpointConfig(
