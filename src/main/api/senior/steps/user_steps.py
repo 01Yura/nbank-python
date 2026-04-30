@@ -1,14 +1,14 @@
 from decimal import Decimal
 
-from src.main.api.senior.DTO.login_user_request_dto import LoginUserRequestDTO
 from src.main.api.senior.DTO.customer_profile_response_dto import CustomerProfileResponseDTO
 from src.main.api.senior.DTO.deposit_money_request_dto import DepositMoneyRequestDTO
 from src.main.api.senior.DTO.deposit_money_response_dto import DepositMoneyResponseDTO
+from src.main.api.senior.DTO.login_user_request_dto import LoginUserRequestDTO
 from src.main.api.senior.DTO.update_profile_request_dto import UpdateProfileRequestDTO
 from src.main.api.senior.DTO.update_profile_response_dto import UpdateProfileResponseDTO
-from src.main.api.senior.client.skeleton.client.crud_client import CrudClient
-from src.main.api.senior.client.skeleton.client.endpoint import Endpoint
-from src.main.api.senior.client.skeleton.client.validated_crud_client import ValidatedCrudClient
+from src.main.api.senior.clients.skeleton.client.crud_client import CrudClient
+from src.main.api.senior.clients.skeleton.client.endpoint import Endpoint
+from src.main.api.senior.clients.skeleton.client.validated_crud_client import ValidatedCrudClient
 from src.main.api.senior.specs.request_spec import RequestSpec
 from src.main.api.senior.specs.response_spec import ResponseSpec
 from src.main.api.senior.steps.base_steps import BaseSteps
@@ -82,12 +82,12 @@ class UserSteps(BaseSteps):
         ).put(update_profile_request_dto)
 
     def deposit_until_balance_at_least(
-        self,
-        username: str,
-        password: str,
-        account_id: int,
-        deposit_per_cycle: float,
-        threshold: float,
+            self,
+            username: str,
+            password: str,
+            account_id: int,
+            deposit_per_cycle: float,
+            threshold: float,
     ) -> Decimal:
         """
         Пополняет указанный аккаунт суммой deposit_per_cycle в цикле,
@@ -110,11 +110,11 @@ class UserSteps(BaseSteps):
         return current_balance
 
     def _deposit_money(
-        self,
-        username: str,
-        password: str,
-        account_id: int,
-        amount: float,
+            self,
+            username: str,
+            password: str,
+            account_id: int,
+            amount: float,
     ) -> DepositMoneyResponseDTO:
         deposit_response = ValidatedCrudClient(
             request_spec=RequestSpec.user_auth_spec(username=username, password=password),

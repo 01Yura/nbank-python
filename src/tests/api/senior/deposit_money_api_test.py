@@ -4,9 +4,9 @@ from src.main.api.senior.DTO.account_dto import AccountDTO
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.senior.DTO.deposit_money_request_dto import DepositMoneyRequestDTO
 from src.main.api.senior.classes.api_manager import ApiManager
-from src.main.api.senior.client.skeleton.client.crud_client import CrudClient
-from src.main.api.senior.client.skeleton.client.endpoint import Endpoint
-from src.main.api.senior.client.skeleton.client.validated_crud_client import ValidatedCrudClient
+from src.main.api.senior.clients.skeleton.client.crud_client import CrudClient
+from src.main.api.senior.clients.skeleton.client.endpoint import Endpoint
+from src.main.api.senior.clients.skeleton.client.validated_crud_client import ValidatedCrudClient
 from src.main.api.senior.generator.random_data import RandomData
 from src.main.api.senior.specs.request_spec import RequestSpec
 from src.main.api.senior.specs.response_spec import ResponseSpec
@@ -30,10 +30,10 @@ class TestApiDepositMoney:
     # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
     @pytest.mark.usefixtures("api_manager")
     def test_user_can_deposit_valid_amount_of_money(
-        self,
-        api_manager: ApiManager,
-        deposit_balance: float,
-        expected_balance: float,
+            self,
+            api_manager: ApiManager,
+            deposit_balance: float,
+            expected_balance: float,
     ):
         # arrange: создаём пользователя через админский эндпоинт
         username = RandomData.generate_username()
@@ -86,10 +86,10 @@ class TestApiDepositMoney:
     # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
     @pytest.mark.usefixtures("api_manager")
     def test_user_cannot_deposit_money(
-        self,
-        api_manager: ApiManager,
-        invalid_deposit_amount: float,
-        expected_error_message: str,
+            self,
+            api_manager: ApiManager,
+            invalid_deposit_amount: float,
+            expected_error_message: str,
     ):
         # arrange: создаём пользователя через админский эндпоинт
         username = RandomData.generate_username()

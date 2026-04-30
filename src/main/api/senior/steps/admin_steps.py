@@ -1,7 +1,8 @@
+from src.main.api.senior.DTO.comparison.dto_assertions import DtoAssertions
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
-from src.main.api.senior.client.skeleton.client.crud_client import CrudClient
-from src.main.api.senior.client.skeleton.client.endpoint import Endpoint
-from src.main.api.senior.client.skeleton.client.validated_crud_client import ValidatedCrudClient
+from src.main.api.senior.clients.skeleton.client.crud_client import CrudClient
+from src.main.api.senior.clients.skeleton.client.endpoint import Endpoint
+from src.main.api.senior.clients.skeleton.client.validated_crud_client import ValidatedCrudClient
 from src.main.api.senior.specs.request_spec import RequestSpec
 from src.main.api.senior.specs.response_spec import ResponseSpec
 from src.main.api.senior.steps.base_steps import BaseSteps
@@ -17,9 +18,9 @@ class AdminSteps(BaseSteps):
             endpoint=Endpoint.ADMIN_CREATE_USER
         ).post(create_user_request_dto)
 
-        # все ассерты касательно создания пользователя прописаны прямо тут, поэтому в самом тесте они уже не нужны
-        assert create_user_response_dto.username == create_user_request_dto.username
-        assert create_user_response_dto.role == create_user_request_dto.role
+        # все ассерты касательно создания пользователя прописаны прямо,
+        # поэтому в самом тесте они уже не нужны
+        DtoAssertions(create_user_request_dto, create_user_response_dto).match()
         password_hash = create_user_response_dto.password
         assert isinstance(password_hash, str) and len(password_hash.strip()) > 0
 

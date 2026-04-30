@@ -1,6 +1,6 @@
 from typing import Protocol, Callable
 
-from src.main.api.senior.client.skeleton.client.endpoint import Endpoint
+from src.main.api.senior.clients.skeleton.client.endpoint import Endpoint
 
 
 class HttpClient(Protocol):

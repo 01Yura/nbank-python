@@ -4,8 +4,8 @@ import requests
 from requests import Response
 
 from src.main.api.senior.DTO.base_dto import BaseDTO
-from src.main.api.senior.client.skeleton.client.http_client import HttpClient
-from src.main.api.senior.client.skeleton.interface.crud_endpoint_interface import CrudEndpointInterface
+from src.main.api.senior.clients.skeleton.client.http_client import HttpClient
+from src.main.api.senior.clients.skeleton.interface.crud_endpoint_interface import CrudEndpointInterface
 from src.main.api.senior.configs.config import Config
 
 # T - тип данных, который наследуется от BaseDTO. Это дженерик тип.

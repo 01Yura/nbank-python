@@ -3,10 +3,10 @@ from typing import TypeVar, Callable
 from requests import Response
 
 from src.main.api.senior.DTO.base_dto import BaseDTO
-from src.main.api.senior.client.skeleton.client.crud_client import CrudClient
-from src.main.api.senior.client.skeleton.client.endpoint import Endpoint
-from src.main.api.senior.client.skeleton.client.http_client import HttpClient
-from src.main.api.senior.client.skeleton.interface.crud_endpoint_interface import CrudEndpointInterface
+from src.main.api.senior.clients.skeleton.client.crud_client import CrudClient
+from src.main.api.senior.clients.skeleton.client.endpoint import Endpoint
+from src.main.api.senior.clients.skeleton.client.http_client import HttpClient
+from src.main.api.senior.clients.skeleton.interface.crud_endpoint_interface import CrudEndpointInterface
 
 T = TypeVar('T', bound=BaseDTO)
 

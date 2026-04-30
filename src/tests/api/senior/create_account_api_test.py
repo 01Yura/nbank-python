@@ -3,9 +3,9 @@ import pytest
 from src.main.api.senior.DTO.account_dto import AccountDTO
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.senior.classes.api_manager import ApiManager
-from src.main.api.senior.client.skeleton.client.crud_client import CrudClient
-from src.main.api.senior.client.skeleton.client.endpoint import Endpoint
-from src.main.api.senior.client.skeleton.client.validated_crud_client import ValidatedCrudClient
+from src.main.api.senior.clients.skeleton.client.crud_client import CrudClient
+from src.main.api.senior.clients.skeleton.client.endpoint import Endpoint
+from src.main.api.senior.clients.skeleton.client.validated_crud_client import ValidatedCrudClient
 from src.main.api.senior.generator.random_data import RandomData
 from src.main.api.senior.specs.request_spec import RequestSpec
 from src.main.api.senior.specs.response_spec import ResponseSpec
