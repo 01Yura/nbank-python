@@ -20,10 +20,9 @@ class TestApiCreateAccount:
         # arrange: создаём пользователя через админский эндпоинт
         username = RandomData.generate_username()
         password = RandomData.generate_password()
-        api_manager.admin_steps.create_user(
-            CreateUserRequestDTO(username=username, password=password, role="USER")
-        )
-        # cleanup не делаем вручную — созданный пользователь автоматически попадёт в created_objects и удалится фикстурой
+        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
+
+        api_manager.admin_steps.create_user(create_user_request_dto)
 
         # act: создаём аккаунт под пользователем
         created_account = ValidatedCrudClient(
