@@ -26,10 +26,27 @@ class CrudClient(HttpClient, CrudEndpointInterface):
         return response
 
     def get(self, dto: T | None = None, id: int | None = None) -> Response:
-        ...
+        # dto параметр оставлен для совместимости интерфейса (в GET обычно body не нужен).
+        url = f"{Config.get_property('apiBaseurl')}{Config.get_property('apiVersion')}{self.endpoint.value.url}"
+        if id is not None:
+            url = f"{url}/{id}"
+
+        response = requests.get(
+            url=url,
+            headers=self.request_spec,
+        )
+        self.response_spec(response)
+        return response
 
     def put(self, dto: T) -> Response:
-        ...
+        body = dto.model_dump() if dto is not None else None
+        response = requests.put(
+            url=f"{Config.get_property('apiBaseurl')}{Config.get_property('apiVersion')}{self.endpoint.value.url}",
+            headers=self.request_spec,
+            json=body,
+        )
+        self.response_spec(response)
+        return response
 
     def delete(self, id: int) -> Response:
         response = requests.delete(

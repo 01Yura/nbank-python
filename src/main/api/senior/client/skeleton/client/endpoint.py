@@ -2,9 +2,12 @@ from dataclasses import dataclass
 from enum import Enum
 
 from src.main.api.senior.DTO.base_dto import BaseDTO
+from src.main.api.senior.DTO.customer_profile_response_dto import CustomerProfileResponseDTO
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.senior.DTO.create_user_response_dto import CreateUserResponseDTO
 from src.main.api.senior.DTO.login_user_request_dto import LoginUserRequestDTO
+from src.main.api.senior.DTO.update_profile_request_dto import UpdateProfileRequestDTO
+from src.main.api.senior.DTO.update_profile_response_dto import UpdateProfileResponseDTO
 
 
 # все поля неизменяемые за счет frozen=True
@@ -35,4 +38,16 @@ class Endpoint(Enum):
         # запрос валидируем DTO, а ответ не валидируем, т.к. токен приходит в headers, а не JSON-body
         request_dto=LoginUserRequestDTO,
         response_dto=None
+    )
+
+    CUSTOMER_PROFILE_GET = EndpointConfig(
+        url="/customer/profile",
+        request_dto=None,
+        response_dto=CustomerProfileResponseDTO,
+    )
+
+    CUSTOMER_PROFILE_UPDATE = EndpointConfig(
+        url="/customer/profile",
+        request_dto=UpdateProfileRequestDTO,
+        response_dto=UpdateProfileResponseDTO,
     )

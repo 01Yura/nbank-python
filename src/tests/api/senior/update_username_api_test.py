@@ -1,56 +1,33 @@
 import pytest
 
-from src.main.api.middle.DTO.create_user_request_dto import CreateUserRequestDTO
-from src.main.api.middle.DTO.create_user_response_dto import CreateUserResponseDTO
-from src.main.api.middle.DTO.customer_profile_response_dto import CustomerProfileResponseDTO
-from src.main.api.middle.DTO.update_profile_request_dto import UpdateProfileRequestDTO
-from src.main.api.middle.DTO.update_profile_response_dto import UpdateProfileResponseDTO
-from src.main.api.middle.client.admin_client import AdminClient
-from src.main.api.middle.client.customer_profile_client import CustomerProfileClient
-from src.main.api.middle.generator.random_data import RandomData
-from src.main.api.middle.specs.request_spec import RequestSpec
-from src.main.api.middle.specs.response_spec import ResponseSpec
+from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
+from src.main.api.senior.classes.api_manager import ApiManager
+from src.main.api.senior.generator.random_data import RandomData
 
 
 @pytest.mark.api
 class TestApiUpdateUserName:
 
-    def test_user_can_update_their_name_using_valid_name(self):
+    # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
+    @pytest.mark.usefixtures("api_manager")
+    def test_user_can_update_their_name_using_valid_name(self, api_manager: ApiManager):
+        # arrange: создаём пользователя через админский эндпоинт
         username = RandomData.generate_username()
         password = RandomData.generate_password()
+        api_manager.admin_steps.create_user(
+            CreateUserRequestDTO(username=username, password=password, role="USER")
+        )
 
-        # create user
-        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
-        create_user_response = AdminClient(
-            RequestSpec.admin_auth_spec(),
-            ResponseSpec.response_returns_201_spec(),
-        ).post(create_user_request_dto)
-        create_user_response_dto = CreateUserResponseDTO(**create_user_response.json())
-
-        # check initial user name (should be None)
-        get_profile_response = CustomerProfileClient(
-            RequestSpec.user_auth_spec(username=username, password=password),
-            ResponseSpec.response_returns_200_spec(),
-        ).get()
-        profile = CustomerProfileResponseDTO(**get_profile_response.json())
+        # assert: изначально name должен быть None
+        profile = api_manager.user_steps.get_customer_profile(username=username, password=password)
         assert profile.name is None
 
-        # change name
-        update_profile_request_dto = UpdateProfileRequestDTO(name="New name")
-        update_profile_response = CustomerProfileClient(
-            RequestSpec.user_auth_spec(username=username, password=password),
-            ResponseSpec.response_returns_200_spec(),
-        ).put(update_profile_request_dto)
-
-        updated_profile_response_dto = UpdateProfileResponseDTO(**update_profile_response.json())
-        assert updated_profile_response_dto.message == "Profile updated successfully"
-        assert updated_profile_response_dto.customer.name == "New name"
-
-        # cleanup created user
-        AdminClient(
-            RequestSpec.admin_auth_spec(),
-            ResponseSpec.response_returns_200_deleted_spec(create_user_response_dto.id),
-        ).delete(create_user_response_dto.id)
+        # act + assert: обновляем имя (все проверки ответа зашиты в steps)
+        api_manager.user_steps.update_customer_profile_name(
+            username=username,
+            password=password,
+            new_name="New name",
+        )
 
     @pytest.mark.parametrize(
         "invalid_name",
@@ -61,43 +38,28 @@ class TestApiUpdateUserName:
             "",
         ],
     )
-    def test_user_cannot_update_their_name_using_invalid_name(self, invalid_name):
+    # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
+    @pytest.mark.usefixtures("api_manager")
+    def test_user_cannot_update_their_name_using_invalid_name(self, api_manager: ApiManager, invalid_name: str):
         username = RandomData.generate_username()
         password = RandomData.generate_password()
 
-        # create user
-        create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
-        create_user_response = AdminClient(
-            RequestSpec.admin_auth_spec(),
-            ResponseSpec.response_returns_201_spec(),
-        ).post(create_user_request_dto)
-        create_user_response_dto = CreateUserResponseDTO(**create_user_response.json())
+        # arrange: создаём пользователя через админский эндпоинт
+        api_manager.admin_steps.create_user(
+            CreateUserRequestDTO(username=username, password=password, role="USER")
+        )
 
-        # check initial user name (should be None)
-        get_profile_response = CustomerProfileClient(
-            RequestSpec.user_auth_spec(username=username, password=password),
-            ResponseSpec.response_returns_200_spec(),
-        ).get()
-        profile = CustomerProfileResponseDTO(**get_profile_response.json())
+        # assert: изначально name должен быть None
+        profile = api_manager.user_steps.get_customer_profile(username=username, password=password)
         assert profile.name is None
 
-        # change name using invalid value
-        update_profile_request_dto = UpdateProfileRequestDTO(name=invalid_name)
-        CustomerProfileClient(
-            RequestSpec.user_auth_spec(username=username, password=password),
-            ResponseSpec.response_returns_400_simple_spec(),
-        ).put(update_profile_request_dto)
+        # act: пытаемся обновить имя невалидным значением (все проверки 400 зашиты в steps)
+        api_manager.user_steps.update_customer_profile_name_invalid(
+            username=username,
+            password=password,
+            invalid_name=invalid_name,
+        )
 
-        # check that name has not been updated
-        response_after_change = CustomerProfileClient(
-            RequestSpec.user_auth_spec(username=username, password=password),
-            ResponseSpec.response_returns_200_spec(),
-        ).get()
-        profile_after_change = CustomerProfileResponseDTO(**response_after_change.json())
+        # assert: имя не должно измениться
+        profile_after_change = api_manager.user_steps.get_customer_profile(username=username, password=password)
         assert profile_after_change.name is None
-
-        # cleanup created user
-        AdminClient(
-            RequestSpec.admin_auth_spec(),
-            ResponseSpec.response_returns_200_deleted_spec(create_user_response_dto.id),
-        ).delete(create_user_response_dto.id)

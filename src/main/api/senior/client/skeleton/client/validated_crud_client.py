@@ -25,11 +25,19 @@ class ValidatedCrudClient(HttpClient, CrudEndpointInterface):
         dto_class = self.endpoint.value.response_dto
         return dto_class.model_validate(response.json())
 
-    def get(self, dto: BaseDTO | None = None, id: int | None = None) -> Response:
-        return super().get(dto, id)
+    def get(self, dto: BaseDTO | None = None, id: int | None = None) -> BaseDTO | Response:
+        response = self.crud_client.get(dto=dto, id=id)
+        dto_class = self.endpoint.value.response_dto
+        if dto_class is None:
+            return response
+        return dto_class.model_validate(response.json())
 
-    def put(self, dto: BaseDTO) -> Response:
-        return super().put(dto)
+    def put(self, dto: BaseDTO) -> BaseDTO | Response:
+        response = self.crud_client.put(dto)
+        dto_class = self.endpoint.value.response_dto
+        if dto_class is None:
+            return response
+        return dto_class.model_validate(response.json())
 
     def delete(self, id: int) -> Response | None:
-        return super().delete(id)
+        return self.crud_client.delete(id)

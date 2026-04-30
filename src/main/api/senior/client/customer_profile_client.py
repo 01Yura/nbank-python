@@ -1,11 +1,16 @@
 import requests
 from requests import Response
 
-from src.main.api.middle.DTO.update_profile_request_dto import UpdateProfileRequestDTO
-from src.main.api.middle.client.base_client import BaseClient
+from src.main.api.senior.DTO.update_profile_request_dto import UpdateProfileRequestDTO
+from src.main.api.senior.configs.config import Config
 
 
-class CustomerProfileClient(BaseClient):
+class CustomerProfileClient:
+    def __init__(self, request_spec: dict[str, str], response_spec):
+        self.headers = request_spec
+        self.base_url = Config.get_property("apiBaseurl") + Config.get_property("apiVersion")
+        self.response_spec = response_spec
+
     def get(self) -> Response:
         response = requests.get(
             url=f"{self.base_url}/customer/profile",
