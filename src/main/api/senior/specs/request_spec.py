@@ -9,6 +9,7 @@ from src.main.api.senior.specs.response_spec import ResponseSpec
 
 class RequestSpec:
     BASE_URL = Config.get_property("apiBaseurl") + Config.get_property("apiVersion")
+    _user_auth_headers_cache: dict[tuple[str, str], dict[str, str]] = {}
 
     @staticmethod
     def _default_request_headers():
@@ -26,6 +27,11 @@ class RequestSpec:
 
     @staticmethod
     def auth_as_user_spec(username: str, password: str):
+        cache_key = (username, password)
+        cached = RequestSpec._user_auth_headers_cache.get(cache_key)
+        if cached is not None:
+            return dict(cached)
+
         login_user_request_dto = LoginUserRequestDTO(username=username, password=password)
         login_user_response = CrudClient(
             request_spec=RequestSpec.unauth_spec(),
@@ -37,6 +43,7 @@ class RequestSpec:
             auth_header = login_user_response.headers.get("Authorization")
             headers = RequestSpec._default_request_headers()
             headers["Authorization"] = auth_header
+            RequestSpec._user_auth_headers_cache[cache_key] = dict(headers)
             return headers
 
         logging.error(f"Authentication failed for {username} with status code {login_user_response.status_code}")
