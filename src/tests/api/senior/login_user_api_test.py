@@ -1,89 +1,65 @@
 import pytest
 
-from src.main.api.middle.DTO.create_user_request_dto import CreateUserRequestDTO
-from src.main.api.middle.DTO.create_user_response_dto import CreateUserResponseDTO
-from src.main.api.middle.DTO.login_user_request_dto import LoginUserRequestDTO
-from src.main.api.middle.client.admin_client import AdminClient
-from src.main.api.middle.client.auth_client import AuthClient
-from src.main.api.middle.generator.random_data import RandomData
-from src.main.api.middle.specs.request_spec import RequestSpec
-from src.main.api.middle.specs.response_spec import ResponseSpec
+from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
+from src.main.api.senior.generator.random_data import RandomData
+from src.main.api.senior.classes.api_manager import ApiManager
 
 
 @pytest.mark.api
 class TestApiLoginUser:
 
-    def test_regular_user_can_login_with_valid_credentials(self):
-        # create user
+    # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
+    @pytest.mark.usefixtures("api_manager")
+    def test_regular_user_can_login_with_valid_credentials(self, api_manager: ApiManager):
+        # arrange: создаём обычного пользователя через админский эндпоинт
         username = RandomData.generate_username()
         password = RandomData.generate_password()
         create_user_request_dto = CreateUserRequestDTO(username=username, password=password, role="USER")
-        create_user_response = AdminClient(
-            RequestSpec.admin_auth_spec(),
-            ResponseSpec.response_returns_201_spec(),
-        ).post(create_user_request_dto)
-        create_user_response_dto = CreateUserResponseDTO(**create_user_response.json())
+        api_manager.admin_steps.create_user(create_user_request_dto)
+        # cleanup не делаем вручную — созданный пользователь автоматически попадёт в created_objects и удалится фикстурой
 
-        # login
-        login_user_request_dto = LoginUserRequestDTO(username=username, password=password)
-        login_user_response = AuthClient(
-            RequestSpec.unauth_spec(),
-            ResponseSpec.response_returns_200_spec(),
-        ).post(login_user_request_dto)
-
-        assert "Basic" in login_user_response.headers.get("Authorization")
-
-        # cleanup created user
-        AdminClient(
-            RequestSpec.admin_auth_spec(),
-            ResponseSpec.response_returns_200_deleted_spec(create_user_response_dto.id),
-        ).delete(create_user_response_dto.id)
+        # act: логинимся под созданным пользователем
+        # проверка на наличие заголовка Authorization с Basic auth scheme в ответе уже есть в UserSteps, поэтому
+        # тут в тесте ассертить ничего не нужно
+        api_manager.user_steps.login_user(username=username, password=password)
 
     @pytest.mark.parametrize(
-        "wrong_field",
-        [
-            "username",
-            "password",
+        argnames=("username_suffix", "password_suffix"),
+        argvalues=[
+            ("", "WRONG"),  # валидный username + невалидный password
+            ("X", ""),      # невалидный username + валидный password
         ],
     )
-    def test_user_cannot_login_with_invalid_username_or_password(self, wrong_field):
+    # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
+    @pytest.mark.usefixtures("api_manager")
+    def test_user_cannot_login_with_invalid_username_or_password(
+        self,
+        api_manager: ApiManager,
+        username_suffix: str,
+        password_suffix: str,
+    ):
+        # arrange: сначала создаём пользователя с корректными кредами
         created_username = RandomData.generate_username()
         created_password = RandomData.generate_password()
-        if wrong_field == "username":
-            login_username, login_password = created_username + "X", created_password
-        else:
-            login_username, login_password = created_username, created_password + "WRONG"
-        # create user
-        create_user_request_dto = CreateUserRequestDTO(username=created_username, password=created_password, role="USER")
-        create_user_response = AdminClient(
-            RequestSpec.admin_auth_spec(),
-            ResponseSpec.response_returns_201_spec(),
-        ).post(create_user_request_dto)
-        create_user_response_dto = CreateUserResponseDTO(**create_user_response.json())
+        api_manager.admin_steps.create_user(
+            CreateUserRequestDTO(username=created_username, password=created_password, role="USER")
+        )
 
-        # login with invalid creds
-        login_user_request_dto = LoginUserRequestDTO(username=login_username, password=login_password)
-        login_user_response = AuthClient(
-            RequestSpec.unauth_spec(),
-            ResponseSpec.response_returns_401_spec(),
-        ).post(login_user_request_dto)
+        login_username, login_password = f"{created_username}{username_suffix}", f"{created_password}{password_suffix}"
 
-        assert login_user_response.headers.get("Authorization") is None
-        assert "Invalid username or password" in login_user_response.text
+        # act + assert: все проверки (401, отсутствие Authorization, текст ошибки) зашиты в steps
+        api_manager.user_steps.login_user_invalid(
+            username=login_username,
+            password=login_password,
+            expected_error_text="Invalid username or password",
+        )
 
-        # cleanup created user
-        AdminClient(
-            RequestSpec.admin_auth_spec(),
-            ResponseSpec.response_returns_200_deleted_spec(create_user_response_dto.id),
-        ).delete(create_user_response_dto.id)
+    # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
+    @pytest.mark.usefixtures("api_manager")
+    def test_admin_user_can_login_with_valid_credentials(self, api_manager: ApiManager):
+        # act: логинимся под встроенным админом (admin/admin)
+        auth_header = api_manager.user_steps.login_as_builtin_admin()
 
-    def test_admin_user_can_login_with_valid_credentials(self):
-        # login as built-in admin
-        login_user_request_dto = LoginUserRequestDTO(username="admin", password="admin")
-        login_admin_response = AuthClient(
-            RequestSpec.unauth_spec(),
-            ResponseSpec.response_returns_200_spec(),
-        ).post(login_user_request_dto)
-
-        assert login_admin_response.headers.get("Authorization") == "Basic YWRtaW46YWRtaW4="
+        # assert: у встроенного админа всегда один и тот же base64-токен
+        assert auth_header == "Basic YWRtaW46YWRtaW4="
 

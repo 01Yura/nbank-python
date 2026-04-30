@@ -1,0 +1,35 @@
+from typing import TypeVar, Callable
+
+from requests import Response
+
+from src.main.api.senior.DTO.base_dto import BaseDTO
+from src.main.api.senior.client.skeleton.client.crud_client import CrudClient
+from src.main.api.senior.client.skeleton.client.endpoint import Endpoint
+from src.main.api.senior.client.skeleton.client.http_client import HttpClient
+from src.main.api.senior.client.skeleton.interface.crud_endpoint_interface import CrudEndpointInterface
+
+T = TypeVar('T', bound=BaseDTO)
+
+
+class ValidatedCrudClient(HttpClient, CrudEndpointInterface):
+    def __init__(self, request_spec: dict[str, str], response_spec: Callable, endpoint: Endpoint):
+        super().__init__(request_spec, response_spec, endpoint)
+        self.crud_client = CrudClient(
+            request_spec=request_spec,
+            response_spec=response_spec,
+            endpoint=endpoint
+        )
+
+    def post(self, dto: BaseDTO | None = None) -> BaseDTO | Response:
+        response = self.crud_client.post(dto)
+        dto_class = self.endpoint.value.response_dto
+        return dto_class.model_validate(response.json())
+
+    def get(self, dto: BaseDTO | None = None, id: int | None = None) -> Response:
+        return super().get(dto, id)
+
+    def put(self, dto: BaseDTO) -> Response:
+        return super().put(dto)
+
+    def delete(self, id: int) -> Response | None:
+        return super().delete(id)

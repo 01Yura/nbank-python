@@ -1,7 +1,7 @@
 import pytest
 
-from src.main.api.middle.DTO.create_user_request_dto import CreateUserRequestDTO
-from src.main.api.middle.generator.random_data import RandomData
+from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
+from src.main.api.senior.generator.random_data import RandomData
 from src.main.api.senior.classes.api_manager import ApiManager
 
 

@@ -27,7 +27,7 @@ class RequestSpec:
     def user_auth_spec(username: str, password: str):
         login_user_request_dto = LoginUserRequestDTO(username=username, password=password)
         login_user_response = requests.post(
-            url=f"{Config.get_property("apiBaseurl")}{Config.get_property("apiVersion")}/auth/login",
+            url=f"{RequestSpec.BASE_URL}/auth/login",
             headers=RequestSpec._default_request_headers(),
             json=login_user_request_dto.model_dump())
 

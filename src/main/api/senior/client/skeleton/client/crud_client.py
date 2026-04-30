@@ -1,4 +1,3 @@
-from http import HTTPStatus
 from typing import TypeVar
 
 import requests
@@ -17,17 +16,13 @@ T = TypeVar('T', bound=BaseDTO)
 
 class CrudClient(HttpClient, CrudEndpointInterface):
 
-    def post(self, dto: T | None = None) -> T | Response:
+    def post(self, dto: T | None = None) -> Response:
         body = dto.model_dump() if dto is not None else None
         response = requests.post(
             url=f"{Config.get_property('apiBaseurl')}{Config.get_property('apiVersion')}{self.endpoint.value.url}",
             headers=self.request_spec,
             json=body)
         self.response_spec(response)
-
-        if response.status_code in [HTTPStatus.OK, HTTPStatus.CREATED]:
-            return self.endpoint.value.response_dto(**response.json())
-
         return response
 
     def get(self, dto: T | None = None, id: int | None = None) -> Response:
@@ -36,7 +31,7 @@ class CrudClient(HttpClient, CrudEndpointInterface):
     def put(self, dto: T) -> Response:
         ...
 
-    def delete(self, id: int) -> Response | None:
+    def delete(self, id: int) -> Response:
         response = requests.delete(
             url=f"{Config.get_property('apiBaseurl')}{Config.get_property('apiVersion')}{self.endpoint.value.url}/{id}",
             headers=self.request_spec)
