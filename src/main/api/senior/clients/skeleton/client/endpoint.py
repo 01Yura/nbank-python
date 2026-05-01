@@ -37,6 +37,12 @@ class Endpoint(Enum):
         response_dto=None
     )
 
+    ADMIN_GET_ALL_USERS = EndpointConfig(
+        url="/admin/users",
+        request_dto=None,
+        response_dto=None,
+    )
+
     AUTH_LOGIN = EndpointConfig(
         url="/auth/login",
         # запрос валидируем DTO, а ответ не валидируем, т.к. токен приходит в headers, а не JSON-body

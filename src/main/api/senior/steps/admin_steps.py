@@ -1,5 +1,6 @@
 from src.main.api.senior.DTO.comparison.dto_assertions import DtoAssertions
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
+from src.main.api.senior.DTO.create_user_response_dto import CreateUserResponseDTO
 from src.main.api.senior.clients.skeleton.client.crud_client import CrudClient
 from src.main.api.senior.clients.skeleton.client.endpoint import Endpoint
 from src.main.api.senior.clients.skeleton.client.validated_crud_client import ValidatedCrudClient
@@ -29,6 +30,14 @@ class AdminSteps(BaseSteps):
         self.created_objects.append(create_user_response_dto)
 
         return create_user_response_dto
+
+    def get_all_users(self) -> list[CreateUserResponseDTO]:
+        response = CrudClient(
+            request_spec=RequestSpec.auth_as_admin_spec(),
+            response_spec=ResponseSpec.response_returns_200_spec(),
+            endpoint=Endpoint.ADMIN_GET_ALL_USERS,
+        ).get()
+        return [CreateUserResponseDTO.model_validate(item) for item in response.json()]
 
     def delete_user(self, id: int):
         CrudClient(
