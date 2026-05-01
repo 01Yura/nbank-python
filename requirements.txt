@@ -5,3 +5,5 @@ faker
 requests_toolbelt
 colorama
 rstr
+playwright
+pytest-playwright

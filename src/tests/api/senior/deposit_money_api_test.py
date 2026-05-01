@@ -13,7 +13,7 @@ from src.main.api.senior.utils.money import as_decimal
 
 
 @pytest.mark.api
-class TestApiDepositMoney:
+class DepositMoneyApiTest:
 
     @pytest.mark.parametrize(
         argnames="deposit_balance, expected_balance",

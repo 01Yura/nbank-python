@@ -1,4 +1,6 @@
-import pytest, requests
+import pytest
+import requests
+
 from src.main.api.common.role import Role
 
 
@@ -41,13 +43,13 @@ class TestApiLoginUser:
         argnames=("created_username", "created_password", "login_username", "login_password"),
         argvalues=[
             # Negative: correct password, incorrect username
-            ("LoginNegativeUser1", "TestPass1!", "LoginNegativeUser1_WRONG", "TestPass1!"),
+            ("LoginNegUser1", "TestPass1!", "LoginNegativeUser1_WRONG", "TestPass1!"),
             # Negative: correct username, incorrect password
-            ("LoginNegativeUser2", "TestPass1!", "LoginNegativeUser2", "TestPass1!_WRONG"),
+            ("LoginNegUser2", "TestPass1!", "LoginNegUser2", "TestPass1!_WRONG"),
         ],
     )
     def test_user_cannot_login_with_invalid_username_or_password(
-        self, created_username, created_password, login_username, login_password
+            self, created_username, created_password, login_username, login_password
     ):
         # create a user and check that the user was created
         create_user_response = requests.post(
@@ -96,4 +98,3 @@ class TestApiLoginUser:
 
         assert login_admin_response.status_code == 200
         assert login_admin_response.headers.get("Authorization") == "Basic YWRtaW46YWRtaW4="
-        

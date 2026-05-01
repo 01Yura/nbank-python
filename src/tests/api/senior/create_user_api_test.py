@@ -6,7 +6,7 @@ from src.main.api.senior.classes.api_manager import ApiManager
 
 
 @pytest.mark.api
-class TestApiCreateUser:
+class CreateUserApiTest:
 
     @pytest.mark.parametrize(
         argnames="username, password, role",

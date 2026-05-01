@@ -7,7 +7,7 @@ from src.main.api.middle.configs.config import Config
 
 
 class RequestSpec:
-    BASE_URL = Config.get_property("apiBaseurl") + Config.get_property("apiVersion")
+    BASE_URL = Config.get_property("apiBaseUrl") + Config.get_property("apiVersion")
 
     @staticmethod
     def _default_request_headers():

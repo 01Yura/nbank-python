@@ -5,7 +5,7 @@ from src.main.api.senior.classes.api_manager import ApiManager
 
 
 @pytest.mark.api
-class TestApiLoginUser:
+class LoginUserApiTest:
 
     # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
     @pytest.mark.usefixtures("api_manager", "user_creation")

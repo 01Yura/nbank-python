@@ -5,14 +5,14 @@ from src.main.api.senior.classes.api_manager import ApiManager
 
 
 @pytest.mark.api
-class TestApiUpdateUserName:
+class UpdateUserNameApiTest:
 
     # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
     @pytest.mark.usefixtures("api_manager", "user_creation")
     def test_user_can_update_their_name_using_valid_name(
-        self,
-        api_manager: ApiManager,
-        user_creation: CreateUserRequestDTO,
+            self,
+            api_manager: ApiManager,
+            user_creation: CreateUserRequestDTO,
     ):
         username = user_creation.username
         password = user_creation.password
@@ -40,10 +40,10 @@ class TestApiUpdateUserName:
     # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
     @pytest.mark.usefixtures("api_manager", "user_creation")
     def test_user_cannot_update_their_name_using_invalid_name(
-        self,
-        api_manager: ApiManager,
-        user_creation: CreateUserRequestDTO,
-        invalid_name: str,
+            self,
+            api_manager: ApiManager,
+            user_creation: CreateUserRequestDTO,
+            invalid_name: str,
     ):
         username = user_creation.username
         password = user_creation.password

@@ -12,7 +12,7 @@ from src.main.api.senior.specs.response_spec import ResponseSpec
 
 
 @pytest.mark.api
-class TestApiCreateAccount:
+class CreateAccountApiTest:
 
     # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
     @pytest.mark.usefixtures("api_manager", "user_creation")

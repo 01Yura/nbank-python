@@ -8,7 +8,6 @@ from src.main.api.senior.specs.response_spec import ResponseSpec
 
 
 class RequestSpec:
-    BASE_URL = Config.get_property("apiBaseurl") + Config.get_property("apiVersion")
     _user_auth_headers_cache: dict[tuple[str, str], dict[str, str]] = {}
 
     @staticmethod
