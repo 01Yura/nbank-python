@@ -7,10 +7,10 @@ from src.main.api.senior.generator.random_dto_generator import RandomDtoGenerato
 from src.tests.ui.junior.base_ui_test import BaseUiTest
 
 
-def submit_add_user_expecting_success_alert(page: Page) -> None:
+def handle_create_user_dialog(page: Page) -> None:
     # Клик по Add User: ждём нативный alert, проверяем текст, закрываем OK.
     # Через expect_event, а не page.once — иначе колбэк может не вызваться и assert не отработает.
-    with page.expect_event("dialog", timeout=10_000) as dialog_info:
+    with page.expect_event("dialog") as dialog_info:
         page.get_by_role("button", name="Add User").click()
     dialog = dialog_info.value
     assert dialog.message == "✅ User created successfully!"
@@ -44,4 +44,5 @@ class CreateUserUiTest(BaseUiTest):
         page.get_by_placeholder("Username").fill(create_user_request_dto.username)
         page.get_by_placeholder("Password").fill(create_user_request_dto.password)
 
-        submit_add_user_expecting_success_alert(page)
+        # Проверяем, что alert появился и текст сообщения соответствует ожидаемому
+        handle_create_user_dialog(page)
