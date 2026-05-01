@@ -7,6 +7,16 @@ from src.main.api.senior.generator.random_dto_generator import RandomDtoGenerato
 from src.tests.ui.junior.base_ui_test import BaseUiTest
 
 
+def submit_add_user_expecting_success_alert(page: Page) -> None:
+    # Клик по Add User: ждём нативный alert, проверяем текст, закрываем OK.
+    # Через expect_event, а не page.once — иначе колбэк может не вызваться и assert не отработает.
+    with page.expect_event("dialog", timeout=10_000) as dialog_info:
+        page.get_by_role("button", name="Add User").click()
+    dialog = dialog_info.value
+    assert dialog.message == "✅ User created successfully!"
+    dialog.accept()
+
+
 @pytest.fixture(scope="session")
 def browser_type_launch_args(browser_type_launch_args):
     """Окно браузера видно при запуске тестов из этого модуля (иначе Playwright по умолчанию headless)."""
@@ -34,10 +44,4 @@ class CreateUserUiTest(BaseUiTest):
         page.get_by_placeholder("Username").fill(create_user_request_dto.username)
         page.get_by_placeholder("Password").fill(create_user_request_dto.password)
 
-        # Нативный alert() — событие "dialog". Ждём его через expect_event: иначе колбэк page.once
-        # в синхронном прогоне может не успеть/не вызваться, assert внутри него не выполнится, тест ложно зелёный.
-        with page.expect_event("dialog", timeout=10_000) as dialog_info:
-            page.get_by_role("button", name="Add User").click()
-        dialog = dialog_info.value
-        assert dialog.message == "✅ User created successfully!"
-        dialog.accept()
+        submit_add_user_expecting_success_alert(page)
