@@ -2,16 +2,19 @@ import random
 import uuid
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Annotated, get_type_hints, get_origin, get_args
+from typing import Any, Annotated, TypeVar, get_type_hints, get_origin, get_args
 
 import rstr
 
+from src.main.api.senior.DTO.base_dto import BaseDTO
 from src.main.api.senior.generator.generating_rule import GeneratingRule
+
+TDto = TypeVar("TDto", bound=BaseDTO)
 
 
 class RandomDtoGenerator:
     @staticmethod
-    def generate(cls: type) -> Any:
+    def generate(cls: type[TDto]) -> TDto:
         type_hints = get_type_hints(cls, include_extras=True)
         init_data = {}
 
