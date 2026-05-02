@@ -18,8 +18,8 @@ from src.main.api.senior.DTO.update_profile_response_dto import UpdateProfileRes
 @dataclass(frozen=True)
 class EndpointConfig:
     url: str
-    request_dto: BaseDTO
-    response_dto: BaseDTO
+    request_dto: type[BaseDTO] | None
+    response_dto: type[BaseDTO] | None
 
 
 class Endpoint(Enum):

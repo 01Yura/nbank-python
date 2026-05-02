@@ -13,7 +13,10 @@ from src.main.api.senior.steps.base_steps import BaseSteps
 class AdminSteps(BaseSteps):
 
     def create_user(self,
-                    create_user_request_dto: CreateUserRequestDTO = RandomDtoGenerator.generate(CreateUserRequestDTO)):
+                    create_user_request_dto: CreateUserRequestDTO | None = None):
+        if create_user_request_dto is None:
+            create_user_request_dto = RandomDtoGenerator.generate(CreateUserRequestDTO)
+
         # create a user
         create_user_response_dto = ValidatedCrudClient(
             request_spec=RequestSpec.auth_as_admin_spec(),

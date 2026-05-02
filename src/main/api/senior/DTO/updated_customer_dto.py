@@ -1,5 +1,3 @@
-from typing import Optional
-
 from src.main.api.senior.DTO.base_dto import BaseDTO
 from src.main.api.senior.DTO.account_dto import AccountDTO
 from src.main.api.common.role import Role
@@ -11,5 +9,5 @@ class UpdatedCustomerDTO(BaseDTO):
     password: str
     role: Role
     accounts: list[AccountDTO]
-    name: Optional[str]
+    name: str | None
 

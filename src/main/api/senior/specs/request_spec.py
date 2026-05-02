@@ -1,7 +1,7 @@
 import logging
 
-from src.main.api.middle.DTO.login_user_request_dto import LoginUserRequestDTO
-from src.main.api.middle.configs.config import Config
+from src.main.api.senior.DTO.login_user_request_dto import LoginUserRequestDTO
+from src.main.api.senior.configs.config import Config
 from src.main.api.senior.clients.skeleton.client.crud_client import CrudClient
 from src.main.api.senior.clients.skeleton.client.endpoint import Endpoint
 from src.main.api.senior.specs.response_spec import ResponseSpec

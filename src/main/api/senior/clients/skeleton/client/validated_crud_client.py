@@ -23,6 +23,8 @@ class ValidatedCrudClient(HttpClient, CrudEndpointInterface):
     def post(self, dto: BaseDTO | None = None) -> BaseDTO | Response:
         response = self.crud_client.post(dto)
         dto_class = self.endpoint.value.response_dto
+        if dto_class is None:
+            return response
         return dto_class.model_validate(response.json())
 
     def get(self, dto: BaseDTO | None = None, id: int | None = None) -> BaseDTO | Response:

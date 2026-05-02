@@ -44,7 +44,7 @@ class CrudClient(HttpClient, CrudEndpointInterface):
         return response
 
     def put(self, dto: T) -> Response:
-        body = dto.model_dump() if dto is not None else None
+        body = dto.model_dump()
         response = requests.put(
             url=f"{_api_base_prefix()}{self.endpoint.value.url}",
             headers=self.request_spec,
