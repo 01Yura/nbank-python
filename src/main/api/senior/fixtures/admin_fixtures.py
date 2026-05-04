@@ -6,12 +6,7 @@ from src.main.api.senior.generator.random_dto_generator import RandomDtoGenerato
 
 
 @pytest.fixture()
-def user_creation(api_manager: ApiManager):
-    create_user_request_dto: CreateUserRequestDTO = RandomDtoGenerator.generate(CreateUserRequestDTO)
+def user_creation(api_manager: ApiManager) -> CreateUserRequestDTO:
+    create_user_request_dto = RandomDtoGenerator.generate(CreateUserRequestDTO)
     api_manager.admin_steps.create_user(create_user_request_dto)
     return create_user_request_dto
-
-
-@pytest.fixture
-def admin_user_request():
-    return CreateUserRequestDTO(username='admin', password='admin', role='ADMIN')

@@ -9,7 +9,7 @@ class LoginUserApiTest:
 
     # этот декоратор по факту не нужен, т.к. api_manager будет передан в тест автоматически так как мы в том числе указали его в аргументах теста
     @pytest.mark.usefixtures("api_manager", "user_creation")
-    def test_regular_user_can_login_with_valid_credentials(
+    def test_user_can_login_with_valid_credentials(
             self,
             api_manager: ApiManager,
             user_creation: CreateUserRequestDTO,

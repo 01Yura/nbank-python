@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from src.main.api.senior.DTO.account_dto import AccountDTO
 from src.main.api.senior.DTO.comparison.dto_assertions import DtoAssertions
 from src.main.api.senior.DTO.customer_profile_response_dto import CustomerProfileResponseDTO
 from src.main.api.senior.DTO.deposit_money_request_dto import DepositMoneyRequestDTO
@@ -59,6 +60,16 @@ class UserSteps(BaseSteps):
 
         assert isinstance(customer_profile_response_dto, CustomerProfileResponseDTO)
         return customer_profile_response_dto
+
+    def get_customer_accounts(self, username: str, password: str) -> list[AccountDTO]:
+        # GET /customer/accounts: JSON-массив аккаунтов; эндпоинт без response_dto в конфиге — парсим вручную.
+        response = CrudClient(
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
+            response_spec=ResponseSpec.response_returns_200_spec(),
+            endpoint=Endpoint.CUSTOMER_ACCOUNTS_GET,
+        ).get()
+
+        return [AccountDTO.model_validate(item) for item in response.json()]
 
     def update_customer_profile_name(self, username: str, password: str, new_name: str) -> UpdateProfileResponseDTO:
         update_profile_request_dto = UpdateProfileRequestDTO(name=new_name)
