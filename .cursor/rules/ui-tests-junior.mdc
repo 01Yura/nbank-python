@@ -1,0 +1,17 @@
+---
+description: UI tests — junior level (Playwright, BaseUiTest)
+globs: src/tests/ui/junior/**/*.py
+alwaysApply: false
+---
+
+# UI tests (junior)
+
+В репозитории UI-тесты только здесь; ориентир — `login_user_ui_test.py`, `deposit_money_ui_test.py`, `BaseUiTest`.
+
+- `@pytest.mark.ui`, класс `…UiTest`, базовый класс `BaseUiTest` — URL через `self.UI_BASE_URL`.
+- Playwright **sync**: `Page`, `expect`; навигация `page.goto(..., wait_until="domcontentloaded")`, для стабильности `page.set_viewport_size({"width": 1920, "height": 1080})`.
+- Селекторы: `get_by_role`, `get_by_placeholder`, `get_by_text`; избегай хрупких CSS, если в проекте уже принят role/text.
+- Подготовка пользователя/API: фикстуры `user_creation`, `api_manager` из корневого `conftest.py`. Тип для `user_creation` бери из того же модуля DTO, что возвращает фикстура (сейчас это `src.main.api.senior.DTO.create_user_request_dto`); не смешивай middle/senior DTO для одной и той же фикстуры.
+- Токен в `localStorage`: `page.context.add_init_script` + `json.dumps`, если сценарий требует авторизации до загрузки страницы.
+- **Нативные диалоги (`alert`/`confirm`)**: они блокируют страницу. Если после клика `click()` зависает по таймауту — принимай диалог в обработчике **до** завершения клика (например `page.once("dialog", lambda d: (d.accept(), …))` или эквивалент с накоплением `message` и assert после клика). Не полагайся на `page.on` без ожидания — assert в колбэке может не выполниться.
+- Опционально: `browser_type_launch_args` с `headless: False` для отладки (как в модулях junior UI).

@@ -3,7 +3,7 @@ import json
 import pytest
 from playwright.sync_api import Page, expect
 
-from src.main.api.middle.DTO.create_user_request_dto import CreateUserRequestDTO
+from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.senior.classes.api_manager import ApiManager
 from src.tests.ui.junior.base_ui_test import BaseUiTest
 

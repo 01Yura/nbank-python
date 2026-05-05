@@ -1,0 +1,16 @@
+---
+description: API tests — senior level (ApiManager, ValidatedCrudClient, Endpoint)
+globs: src/tests/api/senior/**/*.py
+alwaysApply: false
+---
+
+# API tests (senior)
+
+Следуй `src/tests/api/senior/` (например `deposit_money_api_test.py`).
+
+- `@pytest.mark.api`, класс с суффиксом `…ApiTest` (`DepositMoneyApiTest`).
+- Подготовка пользователя: фикстуры `user_creation`, `api_manager` из корневого `conftest.py` (при необходимости помечай `@pytest.mark.usefixtures` — дублировать не обязательно, если аргумент уже в сигнатуре).
+- Запросы через `ValidatedCrudClient` / `CrudClient` с `Endpoint.*`, `RequestSpec`, `ResponseSpec` из `src.main.api.senior.*`.
+- Ответы с моделями Pydantic: `AccountDTO.model_validate(...)` и т.п.
+- Деньги: `as_decimal` из `src.main.api.senior.utils.money` (не дублируй хелпер в тесте без нужды).
+- Структура теста: комментарии `# arrange` / `# act` / `# assert` по стилю существующих senior-тестов.

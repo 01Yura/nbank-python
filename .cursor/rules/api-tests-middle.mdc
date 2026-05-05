@@ -1,0 +1,16 @@
+---
+description: API tests — middle level (клиенты, DTO, specs)
+globs: src/tests/api/middle/**/*.py
+alwaysApply: false
+---
+
+# API tests (middle)
+
+Следуй `src/tests/api/middle/` (например `deposit_money_test.py`, `login_user_api_test.py`).
+
+- `@pytest.mark.api`, класс `TestApi…`.
+- Импорты только из `src.main.api.middle.*`: DTO, `*Client` (`AdminClient`, `AuthClient`, …), `RequestSpec`, `ResponseSpec`, `RandomData`.
+- Каждый запрос: клиент + `RequestSpec.*` + `ResponseSpec.*`; ответы парси в DTO через конструктор/`**response.json()`.
+- Для негативных кейсов используй соответствующие `ResponseSpec` (например `response_returns_401_spec`).
+- После теста **обязательно** удали созданные сущности через `AdminClient` и `ResponseSpec.response_returns_200_deleted_spec(id)` — как в существующих тестах.
+- Деньги: локальный `as_decimal` или тот же паттерн округления, что в middle-тестах.

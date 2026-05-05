@@ -1,0 +1,16 @@
+---
+description: API tests — junior level (requests, прямые URL)
+globs: src/tests/api/junior/**/*.py
+alwaysApply: false
+---
+
+# API tests (junior)
+
+Следуй существующим файлам в `src/tests/api/junior/`.
+
+- Маркируй модуль/класс: `@pytest.mark.api`.
+- Именование класса: префикс `TestApi…` (например `TestApiDepositMoney`).
+- Вызывай HTTP через `requests`: явные URL вида `http://localhost:4111/api/v1/...`, тела — `dict`, роль — `Role` из `src.main.api.common.role`.
+- Проверяй `status_code` и при необходимости тело ответа; для денег используй локальный `as_decimal` с `Decimal` и `quantize` до 2 знаков (как в `deposit_money_test.py`).
+- Варианты сценариев оформляй `@pytest.mark.parametrize` с короткими комментариями к кейсам (`# Positive:`, `# Negative:`).
+- Очистку данных делай явно в том же тесте (удаление пользователя и т.п.), если это заложено в сценарии; фикстур `api_manager` / `user_creation` на junior не полагаемся.
