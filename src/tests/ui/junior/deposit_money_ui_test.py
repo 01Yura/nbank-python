@@ -12,18 +12,20 @@ Q = Decimal("0.01")
 
 
 def as_decimal(x) -> Decimal:
-    # x это number, причем с плавающей точкой, из response.json()
-    # мы преобразуем его в Decimal, округляем до 2 знаков после запятой и возвращаем
     return Decimal(str(x)).quantize(Q, rounding=ROUND_HALF_UP)
 
 
 def handle_user_deposit_dialog(page: Page, message: str) -> None:
-    # Алерт после клика по «Deposit»; expect_event ждёт диалог, иначе колбэк может не успеть.
+    # Алерт после клика по «Deposit»: expect_event — как в transfer_money_ui_test;
+    # once + accept в колбэке — иначе при синхронном alert тело with не завершит click() (таймаут).
+    def _accept_dialog(dialog) -> None:
+        dialog.accept()
+
     with page.expect_event("dialog", timeout=5000) as dialog_info:
+        page.once("dialog", _accept_dialog)
         page.get_by_role("button", name="Deposit").click()
     dialog = dialog_info.value
     assert message in dialog.message
-    dialog.accept()
 
 
 @pytest.fixture(scope="session")
