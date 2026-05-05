@@ -18,18 +18,12 @@ def as_decimal(x) -> Decimal:
 
 
 def handle_user_deposit_dialog(page: Page, message: str) -> None:
-    dialog_messages: list[str] = []
-
-    def _on_dialog(dialog) -> None:
-        dialog_messages.append(dialog.message)
-        dialog.accept()
-
-    # Important: JS dialogs block the page. If we wait to accept it until after click()
-    # returns, the click can time out. Accept immediately, then assert the message.
-    page.once("dialog", _on_dialog)
-    page.get_by_role("button", name="Deposit").click(timeout=5000)
-    assert dialog_messages, "Expected a dialog to appear after clicking Deposit"
-    assert message in dialog_messages[0]
+    # Алерт после клика по «Deposit»; expect_event ждёт диалог, иначе колбэк может не успеть.
+    with page.expect_event("dialog", timeout=5000) as dialog_info:
+        page.get_by_role("button", name="Deposit").click()
+    dialog = dialog_info.value
+    assert message in dialog.message
+    dialog.accept()
 
 
 @pytest.fixture(scope="session")
@@ -69,7 +63,7 @@ class DepositMoneyUiTest(BaseUiTest):
         expect(page.get_by_role("heading", name="Deposit Money")).to_be_visible()
 
         # Выбираем созданный аккаунт в выпадающем списке и вводим сумму для пополнения
-        page.locator(".account-selector").select_option(index=1)
+        page.locator(".account-selector").select_option(value=str(account_dto.id))
         page.get_by_placeholder("Enter amount").fill("1000")
         # Обрабатываем диалог о пополнении счета
         handle_user_deposit_dialog(page, f"Successfully deposited $1000 to account {account_dto.accountNumber}!")
@@ -115,7 +109,7 @@ class DepositMoneyUiTest(BaseUiTest):
         expect(page.get_by_role("heading", name="Deposit Money")).to_be_visible()
 
         # Выбираем созданный аккаунт в выпадающем списке и вводим сумму для пополнения
-        page.locator(".account-selector").select_option(index=1)
+        page.locator(".account-selector").select_option(value=str(account_dto.id))
         page.get_by_placeholder("Enter amount").fill("1000000")
         # Обрабатываем диалог о пополнении счета
         handle_user_deposit_dialog(page, "Please deposit less or equal to 5000$.")
