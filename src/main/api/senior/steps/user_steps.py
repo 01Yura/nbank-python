@@ -71,6 +71,15 @@ class UserSteps(BaseSteps):
 
         return [AccountDTO.model_validate(item) for item in response.json()]
 
+    def create_account(self, username: str, password: str) -> AccountDTO:
+        account_dto = ValidatedCrudClient(
+            request_spec=RequestSpec.auth_as_user_spec(username=username, password=password),
+            response_spec=ResponseSpec.response_returns_201_spec(),
+            endpoint=Endpoint.ACCOUNTS_CREATE,
+        ).post()
+        assert isinstance(account_dto, AccountDTO)
+        return account_dto
+
     def update_customer_profile_name(self, username: str, password: str, new_name: str) -> UpdateProfileResponseDTO:
         update_profile_request_dto = UpdateProfileRequestDTO(name=new_name)
         update_profile_response_dto = ValidatedCrudClient(
