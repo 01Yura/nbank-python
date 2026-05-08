@@ -2,12 +2,12 @@ from decimal import Decimal, ROUND_HALF_UP
 
 import pytest
 from playwright.sync_api import Page, expect
-from time import sleep
 
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.senior.classes.api_manager import ApiManager
 from src.main.ui.middle.pages.bank_alert import BankAlert
 from src.main.ui.middle.pages.user_dashboard import UserDashboard
+from src.main.ui.middle.retry.retry_utils import poll_until
 from src.tests.ui.middle.base_ui_test import BaseUiTest
 
 Q = Decimal("0.01")
@@ -65,17 +65,22 @@ class TransferMoneyUiTest(BaseUiTest):
             .send_transfer()
 
         # assert: баланс может обновляться асинхронно — кратко ждём, пока API начнёт отдавать обновлённые данные
-        accounts = []
-        for _ in range(10):
-            accounts = api_manager.user_steps.get_customer_accounts(
+        def transfer_balances_updated(accs):
+            sender = next((a for a in accs if a.id == sender_account.id), None)
+            receiver = next((a for a in accs if a.id == receiver_account.id), None)
+            return (
+                    sender is not None
+                    and receiver is not None
+                    and as_decimal(sender.balance) != sender_balance
+            )
+
+        accounts = poll_until(
+            lambda: api_manager.user_steps.get_customer_accounts(
                 username=user_creation.username,
                 password=user_creation.password,
-            )
-            sender = next((a for a in accounts if a.id == sender_account.id), None)
-            receiver = next((a for a in accounts if a.id == receiver_account.id), None)
-            if sender is not None and receiver is not None and as_decimal(sender.balance) != sender_balance:
-                break
-            sleep(0.5)
+            ),
+            transfer_balances_updated,
+        )
 
         assert len(accounts) == 2
         for account in accounts:

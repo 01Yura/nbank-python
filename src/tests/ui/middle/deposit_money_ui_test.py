@@ -1,5 +1,4 @@
 from decimal import Decimal, ROUND_HALF_UP
-from time import sleep
 
 import pytest
 from playwright.sync_api import Page, expect
@@ -8,6 +7,7 @@ from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.senior.classes.api_manager import ApiManager
 from src.main.ui.middle.pages.bank_alert import BankAlert
 from src.main.ui.middle.pages.user_dashboard import UserDashboard
+from src.main.ui.middle.retry.retry_utils import poll_until
 from src.tests.ui.middle.base_ui_test import BaseUiTest
 
 Q = Decimal("0.01")
@@ -50,18 +50,16 @@ class DepositMoneyUiTest(BaseUiTest):
 
         # Проверяем, что баланс аккаунта увеличился на 1000 через API
         # (обновление может прийти с задержкой — как в transfer/update_username тестах)
-        list_of_accounts = []
-        for _ in range(10):
-            list_of_accounts = api_manager.user_steps.get_customer_accounts(
+        list_of_accounts = poll_until(
+            lambda: api_manager.user_steps.get_customer_accounts(
                 username=user_creation.username,
                 password=user_creation.password,
-            )
-            if (
-                len(list_of_accounts) == 1
-                and as_decimal(list_of_accounts[0].balance) == as_decimal(1000)
-            ):
-                break
-            sleep(0.5)
+            ),
+            lambda accts: (
+                    len(accts) == 1
+                    and as_decimal(accts[0].balance) == as_decimal(1000)
+            ),
+        )
 
         # assert: проверяем, что список аккаунтов содержит только один аккаунт
         assert len(list_of_accounts) == 1
@@ -92,7 +90,8 @@ class DepositMoneyUiTest(BaseUiTest):
         expect(user_dashboard.deposit_money_heading).to_be_visible()
 
         # act: пытаемся внести сумму больше лимита и проверяем текст alert
-        user_dashboard.select_account(str(account_dto.id)).fill_deposit_amount("1000000").check_alert_message_and_accept(
+        user_dashboard.select_account(str(account_dto.id)).fill_deposit_amount(
+            "1000000").check_alert_message_and_accept(
             BankAlert.PLEASE_DEPOSIT_LESS_OR_EQUAL_5000.value
         ).deposit()
 

@@ -1,11 +1,11 @@
 import pytest
 from playwright.sync_api import Page, expect
-from time import sleep
 
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.senior.classes.api_manager import ApiManager
 from src.main.ui.middle.pages.bank_alert import BankAlert
 from src.main.ui.middle.pages.user_dashboard import UserDashboard
+from src.main.ui.middle.retry.retry_utils import poll_until
 from src.tests.ui.middle.base_ui_test import BaseUiTest
 
 
@@ -36,15 +36,13 @@ class UpdateUsernameUiTest(BaseUiTest):
         ).save_profile_changes()
 
         # assert: сначала убеждаемся по API, что имя реально сохранилось (обновление может быть асинхронным)
-        customer_profile_response_dto = None
-        for _ in range(10):
-            customer_profile_response_dto = api_manager.user_steps.get_customer_profile(
+        customer_profile_response_dto = poll_until(
+            lambda: api_manager.user_steps.get_customer_profile(
                 username=user_creation.username,
                 password=user_creation.password,
-            )
-            if customer_profile_response_dto.name == "New Name":
-                break
-            sleep(0.5)
+            ),
+            lambda dto: dto.name == "New Name",
+        )
         assert customer_profile_response_dto.name == "New Name"
 
         # Затем проверяем, что имя подтянулось на UI (обновляем dashboard)
