@@ -1,6 +1,6 @@
-from src.main.api.senior.DTO.base_dto import BaseDTO
 from src.main.api.senior.DTO.account_dto import AccountDTO
-from src.main.api.common.role import Role
+from src.main.api.senior.DTO.base_dto import BaseDTO
+from src.main.common.role import Role
 
 
 class UpdatedCustomerDTO(BaseDTO):
@@ -10,4 +10,3 @@ class UpdatedCustomerDTO(BaseDTO):
     role: Role
     accounts: list[AccountDTO]
     name: str | None
-

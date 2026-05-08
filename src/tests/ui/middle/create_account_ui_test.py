@@ -3,6 +3,7 @@ from playwright.sync_api import Page, expect
 
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.senior.classes.api_manager import ApiManager
+from src.main.common.helpers.retry_utils import poll_until
 from src.main.ui.middle.pages.bank_alert import BankAlert
 from src.main.ui.middle.pages.user_dashboard import UserDashboard
 from src.tests.ui.middle.base_ui_test import BaseUiTest
@@ -28,8 +29,16 @@ class CreateAccountUiTest(BaseUiTest):
 
         # assert: проверяем, что аккаунт появился на уровне API
         # и что он пустой (balance == 0.0 и transactions == [])
-        customer_accounts = api_manager.user_steps.get_customer_accounts(user_creation.username,
-                                                                         user_creation.password)
+        # список счетов может обновиться с задержкой после UI
+        customer_accounts = poll_until(
+            lambda: api_manager.user_steps.get_customer_accounts(
+                user_creation.username,
+                user_creation.password,
+            ),
+            lambda accounts: len(accounts) == 1,
+            max_attempts=10,
+            delay_s=0.5,
+        )
         assert len(customer_accounts) == 1
         created_account = customer_accounts[0]
         assert created_account.balance == 0.0

@@ -1,13 +1,19 @@
 from decimal import Decimal, ROUND_HALF_UP
-import pytest, requests
-from src.main.api.common.role import Role
+
+import pytest
+import requests
+
+from src.main.common.role import Role
 
 # Q - это константа, которая используется для округления чисел до 2 знаков после запятой
 Q = Decimal("0.01")
+
+
 def as_decimal(x) -> Decimal:
     # x это number, причем с плавающей точкой, из response.json()
     # мы преобразуем его в Decimal, округляем до 2 знаков после запятой и возвращаем
     return Decimal(str(x)).quantize(Q, rounding=ROUND_HALF_UP)
+
 
 @pytest.mark.api
 class TestApiDepositMoney:

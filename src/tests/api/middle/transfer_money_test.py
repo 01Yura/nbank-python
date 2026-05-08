@@ -8,7 +8,6 @@ from src.main.api.middle.DTO.create_user_response_dto import CreateUserResponseD
 from src.main.api.middle.DTO.deposit_money_request_dto import DepositMoneyRequestDTO
 from src.main.api.middle.DTO.deposit_money_response_dto import DepositMoneyResponseDTO
 from src.main.api.middle.DTO.transfer_money_request_dto import TransferMoneyRequestDTO
-from src.main.api.common.role import Role
 from src.main.api.middle.client.accounts_client import AccountsClient
 from src.main.api.middle.client.admin_client import AdminClient
 from src.main.api.middle.client.customer_accounts_client import CustomerAccountsClient
@@ -17,6 +16,7 @@ from src.main.api.middle.client.transfer_money_client import TransferMoneyClient
 from src.main.api.middle.generator.random_data import RandomData
 from src.main.api.middle.specs.request_spec import RequestSpec
 from src.main.api.middle.specs.response_spec import ResponseSpec
+from src.main.common.role import Role
 
 
 def as_decimal(x) -> Decimal:
@@ -27,7 +27,7 @@ def as_decimal(x) -> Decimal:
 
 @pytest.mark.api
 class TestApiTransferMoney:
-    
+
     @pytest.mark.parametrize(
         argnames="transfer_amount, deposit_per_cycle, deposit_threshold, expected_receiver_balance",
         argvalues=[

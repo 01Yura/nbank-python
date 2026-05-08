@@ -3,7 +3,7 @@ from playwright.sync_api import Page, expect
 
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.senior.classes.api_manager import ApiManager
-from src.main.ui.middle.helpers.retry_utils import poll_until
+from src.main.common.helpers.retry_utils import poll_until
 from src.main.ui.middle.pages.bank_alert import BankAlert
 from src.main.ui.middle.pages.user_dashboard import UserDashboard
 from src.tests.ui.middle.base_ui_test import BaseUiTest

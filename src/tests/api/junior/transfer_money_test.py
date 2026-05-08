@@ -1,9 +1,14 @@
 from decimal import Decimal, ROUND_HALF_UP
-import pytest, requests
-from src.main.api.common.role import Role
+
+import pytest
+import requests
+
+from src.main.common.role import Role
 
 # Q - это константа, которая используется для округления чисел до 2 знаков после запятой
 Q = Decimal("0.01")
+
+
 def as_decimal(x) -> Decimal:
     # x это number, причем с плавающей точкой, из response.json()
     # мы преобразуем его в Decimal, округляем до 2 знаков после запятой и возвращаем
@@ -25,12 +30,12 @@ class TestApiTransferMoney:
         ],
     )
     def test_user_can_transfer_money(
-        self,
-        username,
-        transfer_amount,
-        deposit_per_cycle,
-        deposit_threshold,
-        expected_receiver_balance,
+            self,
+            username,
+            transfer_amount,
+            deposit_per_cycle,
+            deposit_threshold,
+            expected_receiver_balance,
     ):
         # create a new user
         create_user_response = requests.post(
@@ -144,7 +149,8 @@ class TestApiTransferMoney:
             ("TrfNoUser4", 10000.01, 5000, 11000, 0.0, "Transfer amount cannot exceed 10000"),
         ],
     )
-    def test_user_cannot_transfer_money(self,username,transfer_amount,deposit_per_cycle,deposit_threshold,expected_receiver_balance,error_substring):
+    def test_user_cannot_transfer_money(self, username, transfer_amount, deposit_per_cycle, deposit_threshold,
+                                        expected_receiver_balance, error_substring):
         # create user
         create_user_response = requests.post(
             url="http://localhost:4111/api/v1/admin/users",

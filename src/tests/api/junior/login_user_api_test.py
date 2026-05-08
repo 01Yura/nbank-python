@@ -1,7 +1,7 @@
 import pytest
 import requests
 
-from src.main.api.common.role import Role
+from src.main.common.role import Role
 
 
 @pytest.mark.api

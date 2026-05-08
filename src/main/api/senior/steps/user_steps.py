@@ -14,7 +14,7 @@ from src.main.api.senior.clients.skeleton.client.validated_crud_client import Va
 from src.main.api.senior.specs.request_spec import RequestSpec
 from src.main.api.senior.specs.response_spec import ResponseSpec
 from src.main.api.senior.steps.base_steps import BaseSteps
-from src.main.api.senior.utils.money import as_decimal
+from src.main.common.helpers.money_decimal import as_decimal
 
 
 class UserSteps(BaseSteps):

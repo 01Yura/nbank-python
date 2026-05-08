@@ -1,8 +1,8 @@
 import pytest
 
-from src.main.api.common.role import Role
 from src.main.api.senior.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.senior.classes.api_manager import ApiManager
+from src.main.common.role import Role
 
 
 @pytest.mark.api

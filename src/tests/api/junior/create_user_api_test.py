@@ -1,5 +1,7 @@
-import pytest, requests
-from src.main.api.common.role import Role
+import pytest
+import requests
+
+from src.main.common.role import Role
 
 
 @pytest.mark.api
@@ -37,7 +39,7 @@ class TestApiCreateUser:
         assert response.status_code == 201
         assert response.json().get("username") == username
         assert response.json().get("role") == role
-        
+
         password_hash = response.json().get("password")
         assert isinstance(password_hash, str) and len(password_hash.strip()) > 0
 
@@ -47,7 +49,8 @@ class TestApiCreateUser:
             # Username field validation
             ("", "TestUser2!", Role.USER.value, "username", "Username cannot be blank"),
             ("Te", "TestUser3!", Role.USER.value, "username", "Username must be between 3 and 15 characters"),
-            ("TestUserUserUser", "TestUser4!", Role.USER.value, "username", "Username must be between 3 and 15 characters"),
+            ("TestUserUserUser", "TestUser4!", Role.USER.value, "username",
+             "Username must be between 3 and 15 characters"),
             ("TestUser5#", "TestUser5!", Role.USER.value, "username",
              "Username must contain only letters, digits, dashes, underscores, and dots"),
 

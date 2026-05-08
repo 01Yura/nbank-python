@@ -6,7 +6,6 @@ from src.main.api.middle.DTO.account_dto import AccountDTO
 from src.main.api.middle.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.middle.DTO.create_user_response_dto import CreateUserResponseDTO
 from src.main.api.middle.DTO.deposit_money_request_dto import DepositMoneyRequestDTO
-from src.main.api.common.role import Role
 from src.main.api.middle.client.accounts_client import AccountsClient
 from src.main.api.middle.client.admin_client import AdminClient
 from src.main.api.middle.client.customer_accounts_client import CustomerAccountsClient
@@ -14,6 +13,7 @@ from src.main.api.middle.client.deposit_money_client import DepositMoneyClient
 from src.main.api.middle.generator.random_data import RandomData
 from src.main.api.middle.specs.request_spec import RequestSpec
 from src.main.api.middle.specs.response_spec import ResponseSpec
+from src.main.common.role import Role
 
 
 def as_decimal(x) -> Decimal:

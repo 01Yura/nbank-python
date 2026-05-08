@@ -1,6 +1,6 @@
-from src.main.api.common.role import Role
 from src.main.api.senior.DTO.account_dto import AccountDTO
 from src.main.api.senior.DTO.base_dto import BaseDTO
+from src.main.common.role import Role
 
 
 class CustomerProfileResponseDTO(BaseDTO):
@@ -10,4 +10,3 @@ class CustomerProfileResponseDTO(BaseDTO):
     role: Role
     name: str | None
     accounts: list[AccountDTO]
-

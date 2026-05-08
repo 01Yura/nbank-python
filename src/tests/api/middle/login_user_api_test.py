@@ -3,12 +3,12 @@ import pytest
 from src.main.api.middle.DTO.create_user_request_dto import CreateUserRequestDTO
 from src.main.api.middle.DTO.create_user_response_dto import CreateUserResponseDTO
 from src.main.api.middle.DTO.login_user_request_dto import LoginUserRequestDTO
-from src.main.api.common.role import Role
 from src.main.api.middle.client.admin_client import AdminClient
 from src.main.api.middle.client.auth_client import AuthClient
 from src.main.api.middle.generator.random_data import RandomData
 from src.main.api.middle.specs.request_spec import RequestSpec
 from src.main.api.middle.specs.response_spec import ResponseSpec
+from src.main.common.role import Role
 
 
 @pytest.mark.api
@@ -55,7 +55,8 @@ class TestApiLoginUser:
         else:
             login_username, login_password = created_username, created_password + "WRONG"
         # create user
-        create_user_request_dto = CreateUserRequestDTO(username=created_username, password=created_password, role=Role.USER)
+        create_user_request_dto = CreateUserRequestDTO(username=created_username, password=created_password,
+                                                       role=Role.USER)
         create_user_response = AdminClient(
             RequestSpec.admin_auth_spec(),
             ResponseSpec.response_returns_201_spec(),
@@ -87,4 +88,3 @@ class TestApiLoginUser:
         ).post(login_user_request_dto)
 
         assert login_admin_response.headers.get("Authorization") == "Basic YWRtaW46YWRtaW4="
-
